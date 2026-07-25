@@ -52,14 +52,48 @@ Run `lib/schema.sql` once against your NeonDB instance.
 psql $DATABASE_URL -f lib/schema.sql
 ```
 
-## Deploying to Vercel
+## Releases and CI/CD
 
-1. Push this repo to GitHub
-2. Import the project in [vercel.com](https://vercel.com)
-3. Add environment variables in Vercel project settings:
-   - `DATABASE_URL` — from your Neon project dashboard
-   - `NEXT_PUBLIC_GA_ID` — your GA4 Measurement ID (format: `G-XXXXXXXXXX`)
-4. Deploy
+`main` is the production branch. The CI/CD workflow runs the Jest suite, a production
+build, and CodeQL SAST on every pull request to `main` and every `main` push. A
+successful `main` run then deploys the prebuilt production artifact to Vercel.
+
+### Uploading a new tool version
+
+Julienne should create a branch and pull request for each upload. The approved upload
+location is `public/tools/`; replace the deployed tool's existing canonical file there
+rather than adding a new `v4` filename. Routes and tests reference the canonical names,
+so this makes a validated merge deploy the new version automatically. For example, an
+updated primary circuit suite replaces:
+
+- `public/tools/circuit_pri_suitev2.html`
+- `public/tools/circuit_diagram_creatorv3.html`
+- `public/tools/object_circuitv3.html`
+
+Use the pull request title and Git history to record the supplied version (for example,
+`Circuit builder v4`). Preserve the required `tool-id` meta tag and `/tracker.js` script
+when replacing a tool. Do not commit uploads outside `public/tools/`; move retired
+source copies to `_archive/` only when they are needed for reference.
+
+### One-time GitHub and Vercel setup
+
+1. Create a Vercel project linked to this repository and configure its production
+   `DATABASE_URL` and `NEXT_PUBLIC_GA_ID` environment variables.
+2. In GitHub repository **Settings → Secrets and variables → Actions**, add:
+   - `VERCEL_TOKEN` — a Vercel token authorized for the project.
+   - `VERCEL_ORG_ID` — the Vercel team or personal account ID.
+   - `VERCEL_PROJECT_ID` — the Vercel project ID.
+3. In GitHub repository **Settings → Environments**, create a `production`
+   environment and restrict deployment approval to the intended release maintainers if
+   manual production approval is desired.
+4. In GitHub repository **Settings → Rules → Rulesets**, add a ruleset targeting
+   `main` that requires pull requests before merging, requires the `quality` and
+   `sast` status checks to pass, requires branches to be up to date, and blocks force
+   pushes and deletion. Restrict bypass permission to repository administrators.
+
+After that setup, Julienne opens a PR, confirms the `quality` and `sast` checks pass,
+and merges it. The merge triggers the Vercel deployment; direct, unvalidated uploads
+to `main` are blocked by the ruleset.
 
 ## Editing the HTML tools
 
