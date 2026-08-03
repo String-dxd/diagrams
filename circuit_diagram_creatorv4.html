@@ -24,7 +24,7 @@
       color: #111827;
       height: 100vh;
       display: grid;
-      grid-template-columns: 220px 1fr 220px; 
+      grid-template-columns: 220px 1fr 220px;
     }
     .sidebar { background: var(--panel); padding: 8px; overflow: auto; }
     .left-sidebar { border-right: 1px solid var(--border); }
@@ -60,7 +60,7 @@
       text-align: center; resize: none; outline: none; color: #111827; font-family: Arial, Helvetica, sans-serif;
       line-height: 1.25; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden; white-space: pre-wrap;
     }
-    
+
     /* Navigator / Minimap Styles */
     .navigator-panel {
       position: absolute;
@@ -148,7 +148,7 @@
     </div>
     <svg id="app" xmlns="http://www.w3.org/2000/svg"></svg>
     <textarea id="inlineEditor" placeholder="Type here..."></textarea>
-    
+
     <div id="navigator" class="navigator-panel">
       <svg id="minimap" xmlns="http://www.w3.org/2000/svg"></svg>
       <div id="minimap-viewport"></div>
@@ -211,7 +211,7 @@
     const HIT = 10;
     const WIRE_STROKE = 3;
     const COMPONENT_SCALE = 0.8;
-    
+
     const state = {
       tool: 'select', rotation: 0, showGrid: true, wires: [], components: [],
       junctionMap: new Map(), selected: null, dragging: null, wirePreview: null,
@@ -247,7 +247,7 @@
 
     function deepClone(obj) { return JSON.parse(JSON.stringify(obj)); }
     function getSelectedComponent() { return state.selected?.kind === 'component' ? state.components.find(c => c.id === state.selected.id) : null; }
-    
+
     function saveHistory() {
       state.history.push(deepClone({ wires: state.wires, components: state.components, nextId: state.nextId }));
       if (state.history.length > 100) state.history.shift();
@@ -259,7 +259,7 @@
     }
     function undo() { if (!state.history.length) return; state.future.push(deepClone({ wires: state.wires, components: state.components, nextId: state.nextId })); restoreSnapshot(state.history.pop()); }
     function redo() { if (!state.future.length) return; state.history.push(deepClone({ wires: state.wires, components: state.components, nextId: state.nextId })); restoreSnapshot(state.future.pop()); }
-    
+
     function snap(v) { return Math.round(v / GRID) * GRID; }
     function keyPt(x, y) { return `${x},${y}`; }
     function addJunction(x, y) { const key = keyPt(x, y); state.junctionMap.set(key, (state.junctionMap.get(key) || 0) + 1); }
@@ -277,7 +277,7 @@
       for (const wire of state.wires) for (const p of segmentPoints(wire.a, wire.b)) addJunction(p.x, p.y);
       for (const comp of state.components) getComponentNodes(comp).forEach(p => addJunction(p.x, p.y));
     }
-    
+
     function setTool(tool) {
       state.tool = tool; state.selected = null;
       ui.toolBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tool === tool));
@@ -293,7 +293,7 @@
     ui.rotateBtn.addEventListener('click', () => applyRotation(90));
     ui.rotate180Btn.addEventListener('click', () => applyRotation(180));
     ui.toggleGridBtn.addEventListener('click', () => { state.showGrid = !state.showGrid; ui.toggleGridBtn.textContent = state.showGrid ? 'Hide Grid' : 'Show Grid'; render(); });
-    
+
     ui.updateResistorBtn.addEventListener('click', () => {
       const comp = getSelectedComponent();
       if (!comp || comp.type !== 'resistor') return;
@@ -309,7 +309,7 @@
     ui.fontSize.addEventListener('input', () => {
       const comp = getSelectedComponent(); if (comp?.type === 'textbox') { comp.fontSize = Math.max(8, Math.min(48, Number(ui.fontSize.value) || 12)); resizeTextboxToFit(comp); render(); }
     });
-    
+
     ui.undoBtn.addEventListener('click', undo); ui.redoBtn.addEventListener('click', redo);
     ui.clearBtn.addEventListener('click', () => { saveHistory(); state.wires = []; state.components = []; state.selected = null; rebuildJunctions(); syncControls(); render(); });
     ui.exportBtn.addEventListener('click', exportPNG);
@@ -340,7 +340,7 @@
       if (type === 'resistor') return { w: 90 * COMPONENT_SCALE, h: 30 * COMPONENT_SCALE };
       return { w: 80 * COMPONENT_SCALE, h: 30 * COMPONENT_SCALE };
     }
-    
+
     function getComponentNodes(comp) {
       const size = componentSize(comp.type, comp.cells || 2, comp);
       if (['arrow', 'divider-arrow', 'label-line', 'textbox'].includes(comp.type)) return [];
@@ -352,7 +352,7 @@
       if (comp.rotation % 180 === 0) return [{ x: comp.x - size.w / 2, y: comp.y }, { x: comp.x + size.w / 2, y: comp.y }];
       return [{ x: comp.x, y: comp.y - size.w / 2 }, { x: comp.x, y: comp.y + size.w / 2 }];
     }
-    
+
     function distance(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
     function pointLineDistance(p, a, b) {
       const l2 = (b.x-a.x)**2 + (b.y-a.y)**2; if (l2 === 0) return distance(p, a);
@@ -398,7 +398,7 @@
       comp.width = Math.max(64, Math.ceil(Math.max(40, ...lines.map(line => measureTextWidth(line, comp.fontSize || 12))) + padX * 2));
       comp.height = Math.max(24, Math.ceil(lines.length * ((comp.fontSize || 12) * 1.2) + padY * 2));
     }
-    
+
     function syncControls() {
       const comp = getSelectedComponent();
       if (comp?.type === 'textbox') { ui.fontSize.value = comp.fontSize || 12; ui.textValue.value = comp.text || ''; }
@@ -429,17 +429,17 @@
       const snapshotBeforeAdd = deepClone({ wires: state.wires, components: state.components, nextId: state.nextId });
       const p = type === 'textbox' ? pos : nearestGridPoint(pos);
       const comp = { id: state.nextId++, type, x: p.x, y: p.y, rotation: state.rotation, variant: type, cells: type === 'battery' ? Math.max(1, Math.min(8, Number(ui.batteryCells.value) || 2)) : undefined };
-      
+
       if (type === 'electromagnet') { comp.blocks = Math.max(2, Math.floor((Number(ui.magnetBlocks.value) || 2) / 2) * 2); comp.coils = Math.max(1, Number(ui.magnetCoils.value) || 5); }
       if (type === 'resistor') { comp.fillPattern = ui.resistorFill.value; }
 
-      if (type === 'textbox') { comp.text = ''; comp.fontSize = Math.max(8, Math.min(48, Number(ui.fontSize.value) || 12)); comp.width = 76; comp.height = 24; resizeTextboxToFit(comp); comp._snapshot = snapshotBeforeAdd; } 
+      if (type === 'textbox') { comp.text = ''; comp.fontSize = Math.max(8, Math.min(48, Number(ui.fontSize.value) || 12)); comp.width = 76; comp.height = 24; resizeTextboxToFit(comp); comp._snapshot = snapshotBeforeAdd; }
       else { autoAlignComponent(comp); state.history.push(snapshotBeforeAdd); if (state.history.length > 100) state.history.shift(); state.future = []; }
-      
+
       state.components.push(comp); rebuildJunctions(); state.selected = { kind: 'component', id: comp.id }; syncControls(); render();
       if (type === 'textbox') setTimeout(() => startInlineEditing(comp), 0);
     }
-    
+
     function addArrow(start, end, type = 'arrow') {
       saveHistory(); const a = type === 'divider-arrow' ? nearestGridPoint(start) : start, b = type === 'divider-arrow' ? nearestGridPoint(end) : end;
       const comp = { id: state.nextId++, type, x1: a.x, y1: a.y, x2: b.x, y2: b.y, x: (a.x + b.x)/2, y: (a.y + b.y)/2, rotation: 0, variant: type };
@@ -474,8 +474,8 @@
       const hit = findHit(p); state.selected = hit; syncControls();
       if (hit?.kind === 'component' && state.tool === 'select') {
         const comp = state.components.find(c => c.id === hit.id);
-        if (['arrow', 'divider-arrow', 'label-line'].includes(comp?.type)) state.dragging = { mode: 'move-arrow', id: comp.id, lastX: p.x, lastY: p.y };
-        else state.dragging = { mode: 'move-component', id: comp.id, offsetX: comp.x - (comp.type === 'textbox' ? p.x : snapped.x), offsetY: comp.y - (comp.type === 'textbox' ? p.y : snapped.y) };
+        if (['arrow', 'divider-arrow', 'label-line'].includes(comp?.type)) state.dragging = { mode: 'move-arrow', id: comp.id, lastX: p.x, lastY: p.y, moved: false };
+        else state.dragging = { mode: 'move-component', id: comp.id, offsetX: comp.x - (comp.type === 'textbox' ? p.x : snapped.x), offsetY: comp.y - (comp.type === 'textbox' ? p.y : snapped.y), moved: false };
       }
       render();
     });
@@ -487,12 +487,14 @@
       if (state.dragging.mode === 'divider-arrow') { state.dragging.current = snapped; state.wirePreview = { a: state.dragging.start, b: snapped, kind: 'divider-arrow' }; render(); }
       if (state.dragging.mode === 'move-component') {
         const comp = state.components.find(c => c.id === state.dragging.id); if (!comp) return;
+        if (!state.dragging.moved) { saveHistory(); state.dragging.moved = true; }
         if (comp.type === 'textbox') { comp.x = p.x + state.dragging.offsetX; comp.y = p.y + state.dragging.offsetY; }
         else { comp.x = snapped.x + state.dragging.offsetX; comp.y = snapped.y + state.dragging.offsetY; autoAlignComponent(comp); rebuildJunctions(); }
         render();
       }
       if (state.dragging.mode === 'move-arrow') {
         const comp = state.components.find(c => c.id === state.dragging.id); if (!comp) return;
+        if (!state.dragging.moved) { saveHistory(); state.dragging.moved = true; }
         let dx = p.x - state.dragging.lastX, dy = p.y - state.dragging.lastY;
         if (comp.type === 'divider-arrow') { const targetX = snap(comp.x + dx), targetY = snap(comp.y + dy); dx = targetX - comp.x; dy = targetY - comp.y; }
         comp.x1 += dx; comp.y1 += dy; comp.x2 += dx; comp.y2 += dy; comp.x += dx; comp.y += dy;
@@ -504,7 +506,7 @@
       if (!state.dragging) return;
       if (state.dragging.mode === 'wire' && distance(state.dragging.start, state.dragging.current) > 0) { saveHistory(); state.wires.push({ id: state.nextId++, a: state.dragging.start, b: state.dragging.current }); rebuildJunctions(); state.selected = { kind: 'wire', id: state.nextId - 1 }; }
       if (['arrow', 'label-line', 'divider-arrow'].includes(state.dragging.mode) && distance(state.dragging.start, state.dragging.current) > 3) addArrow(state.dragging.start, state.dragging.current, state.dragging.mode === 'arrow' ? 'arrow' : state.dragging.mode === 'label-line' ? 'label-line' : 'divider-arrow');
-      if (['move-component', 'move-arrow'].includes(state.dragging.mode)) { if (state.dragging.mode === 'move-component') rebuildJunctions(); saveHistory(); state.history.push(state.history.pop()); }
+      if (['move-component', 'move-arrow'].includes(state.dragging.mode)) { if (state.dragging.mode === 'move-component') rebuildJunctions(); }
       state.dragging = null; state.wirePreview = null; render();
     });
 
@@ -555,16 +557,16 @@
       const nav = document.getElementById('navigator');
       const minimap = document.getElementById('minimap');
       const navViewport = document.getElementById('minimap-viewport');
-      
+
       if (!nav || !minimap || !navViewport) return;
 
       minimap.setAttribute('viewBox', `0 0 ${state.world.width} ${state.world.height}`);
-      minimap.innerHTML = svg.innerHTML; 
-      
+      minimap.innerHTML = svg.innerHTML;
+
       [...minimap.querySelectorAll('line[stroke="#f0f0f0"]')].forEach(el => el.remove());
 
       const view = state.view || { x: 0, y: 0, width: state.viewport.width, height: state.viewport.height };
-      
+
       const leftPct = (view.x / state.world.width) * 100;
       const topPct = (view.y / state.world.height) * 100;
       const widthPct = (view.width / state.world.width) * 100;
@@ -580,7 +582,7 @@
       state.viewport.width = svg.clientWidth || svg.parentElement.clientWidth; state.viewport.height = svg.clientHeight || svg.parentElement.clientHeight;
       const view = state.view || { x: 0, y: 0, width: state.viewport.width, height: state.viewport.height };
       svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.width} ${view.height}`); svg.innerHTML = '';
-      
+
       const defs = make('defs');
       defs.innerHTML = `
         <pattern id="pat-dotted" x="0" y="0" width="4" height="4" patternUnits="userSpaceOnUse">
@@ -601,11 +603,11 @@
 
       if (state.showGrid) drawGrid();
       drawWires(); drawWirePreview(); drawComponents();
-      
+
       // Update Navigator at the end of every render cycle
       updateNavigator();
     }
-    
+
     function drawGrid() {
       const g = make('g', { opacity: 1 }), view = state.view || { x: 0, y: 0, width: state.viewport.width, height: state.viewport.height };
       for (let x = Math.floor(view.x / GRID) * GRID; x <= Math.ceil((view.x + view.width) / GRID) * GRID; x += GRID) g.appendChild(make('line', { x1: x, y1: view.y, x2: x, y2: view.y + view.height, stroke: '#f0f0f0', 'stroke-width': 1 }));
@@ -633,10 +635,10 @@
         if (['arrow', 'divider-arrow'].includes(comp.type)) { drawArrow(svg, comp.x1, comp.y1, comp.x2, comp.y2, false); continue; }
         if (comp.type === 'label-line') { drawLabelLine(svg, comp.x1, comp.y1, comp.x2, comp.y2, false); continue; }
         if (comp.type === 'textbox') { drawTextbox(svg, comp); continue; }
-        
+
         const wrap = make('g', { transform: `translate(${comp.x} ${comp.y}) rotate(${comp.rotation})` });
         const scaled = make('g', { transform: `scale(${COMPONENT_SCALE})` }); wrap.appendChild(scaled);
-        
+
         if (comp.type === 'bulb') drawBulb(scaled);
         if (comp.type === 'battery') drawBattery(scaled, comp.cells || 2);
         if (comp.type === 'switch') drawSwitch(scaled, comp.variant === 'switch-closed');
@@ -645,7 +647,7 @@
         svg.appendChild(wrap);
       }
     }
-    
+
     function drawTextbox(parent, comp) {
       const g = make('g'), lines = wrapTextLines(comp.text || '', Math.max(80, comp.width - 16), comp.fontSize || 12), lineHeight = (comp.fontSize || 12) * 1.25, startY = comp.y - ((lines.length - 1) * lineHeight) / 2;
       lines.forEach((line, index) => { const t = make('text', { x: comp.x, y: startY + index * lineHeight, 'text-anchor': 'middle', 'dominant-baseline': 'middle', 'font-size': comp.fontSize || 12, 'font-family': 'Arial, Helvetica, sans-serif', fill: '#111827' }); t.textContent = line; g.appendChild(t); }); parent.appendChild(g);
@@ -702,7 +704,7 @@
       return 'white';
     }
     function drawResistor(g, fillPattern = 'white') {
-      g.appendChild(make('line', { x1: -44.8, y1: 0, x2: -22, y2: 0, stroke: '#111827', 'stroke-width': 2.4 })); 
+      g.appendChild(make('line', { x1: -44.8, y1: 0, x2: -22, y2: 0, stroke: '#111827', 'stroke-width': 2.4 }));
       g.appendChild(make('line', { x1: 22, y1: 0, x2: 44.8, y2: 0, stroke: '#111827', 'stroke-width': 2.4 }));
       // White-out layer
       g.appendChild(make('rect', { x: -22, y: -9, width: 44, height: 18, fill: 'white', stroke: 'none' }));
@@ -711,7 +713,7 @@
     }
 
     function make(tag, attrs = {}) { const el = document.createElementNS('http://www.w3.org/2000/svg', tag); for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v); return el; }
-    
+
     function exportPNG() {
       const clone = svg.cloneNode(true); clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
       [...clone.querySelectorAll('line')].forEach(l => { if (state.showGrid && l.getAttribute('stroke') === '#f0f0f0') l.remove(); }); [...clone.querySelectorAll('rect')].forEach(r => { if (r.getAttribute('stroke-dasharray')) r.remove(); });
@@ -720,7 +722,7 @@
       const data = new XMLSerializer().serializeToString(clone), img = new Image(), blob = new Blob([data], { type: 'image/svg+xml;charset=utf-8' }), url = URL.createObjectURL(blob);
       img.onload = () => { const canvas = document.createElement('canvas'); canvas.width = vb[2]; canvas.height = vb[3]; const ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0); URL.revokeObjectURL(url); canvas.toBlob((pngBlob) => { const a = document.createElement('a'); a.href = URL.createObjectURL(pngBlob); a.download = 'circuit-diagram.png'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }, 'image/png'); }; img.src = url;
     }
-    
+
     function contentBounds() {
       const points = []; state.wires.forEach(w => points.push(w.a, w.b)); state.components.forEach(c => { const b = getComponentBounds(c); points.push({ x: b.x, y: b.y }, { x: b.x + b.w, y: b.y + b.h }); });
       if (!points.length) return { x: 0, y: 0, w: 400, h: 300 }; const xs = points.map(p => p.x), ys = points.map(p => p.y), minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);

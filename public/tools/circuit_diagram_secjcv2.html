@@ -280,7 +280,7 @@
         <input id="batteryCells" type="number" min="1" max="8" value="2" />
       </div>
       <hr style="border: 0; border-top: 1px solid var(--border); margin: 8px 0;" />
-      
+
       <div class="field">
         <label for="magnetBlocks">Solenoid length (Even grids)</label>
         <input id="magnetBlocks" type="number" min="2" max="16" step="2" value="4" />
@@ -333,11 +333,11 @@
       <button id="zoomInBtn" title="Zoom in">+</button>
       <button id="fitBtn">Centre View</button>
     </div>
-    
+
     <svg id="app" xmlns="http://www.w3.org/2000/svg"></svg>
-    
+
     <textarea id="inlineEditor" class="text-editor" placeholder="Type here..."></textarea>
-    
+
     <div id="navigator" class="navigator-panel">
       <svg id="minimap" xmlns="http://www.w3.org/2000/svg"></svg>
       <div id="minimap-viewport"></div>
@@ -403,7 +403,7 @@
     const HIT = 8;
     const WIRE_STROKE = 2.4;
     const COMPONENT_SCALE = 0.8;
-    
+
     const state = {
       tool: 'select',
       rotation: 0,
@@ -556,7 +556,7 @@
     ui.toolBtns.forEach(btn => btn.addEventListener('click', () => setTool(btn.dataset.tool)));
     ui.rotateBtn.addEventListener('click', () => applyRotation(90));
     ui.rotate180Btn.addEventListener('click', () => applyRotation(180));
-    
+
     ui.fontSize.addEventListener('input', () => {
       const comp = getSelectedComponent();
       if (comp?.type === 'textbox') {
@@ -599,7 +599,7 @@
       syncControls();
       render();
     });
-    
+
     ui.flipPolarityBtn.addEventListener('click', () => {
       const selectedComp = getSelectedComponent();
       if (selectedComp && ['dc-supply', 'ac-supply'].includes(selectedComp.type)) {
@@ -611,7 +611,7 @@
       state.polarityFlipped = !state.polarityFlipped;
       ui.flipPolarityBtn.classList.toggle('active', state.polarityFlipped);
     });
-    
+
     ui.undoBtn.addEventListener('click', undo);
     ui.redoBtn.addEventListener('click', redo);
     ui.clearBtn.addEventListener('click', () => {
@@ -622,7 +622,7 @@
       rebuildJunctions();
       render();
     });
-    
+
     ui.exportBtn.addEventListener('click', exportPNG);
     ui.fitBtn.addEventListener('click', centreView);
     ui.zoomInBtn.addEventListener('click', () => adjustZoom(1.2));
@@ -1243,7 +1243,7 @@
         render();
       }
     });
-    
+
     // --- NAVIGATOR EVENTS ---
     const navPanel = document.getElementById('navigator');
     let isDraggingMinimap = false;
@@ -1342,16 +1342,16 @@
       const nav = document.getElementById('navigator');
       const minimap = document.getElementById('minimap');
       const navViewport = document.getElementById('minimap-viewport');
-      
+
       if (!nav || !minimap || !navViewport) return;
 
       minimap.setAttribute('viewBox', `0 0 ${state.world.width} ${state.world.height}`);
-      minimap.innerHTML = svg.innerHTML; 
-      
+      minimap.innerHTML = svg.innerHTML;
+
       [...minimap.querySelectorAll('line[stroke="#f0f0f0"]')].forEach(el => el.remove());
 
       const view = state.view || { x: 0, y: 0, width: state.viewport.width, height: state.viewport.height };
-      
+
       const leftPct = (view.x / state.world.width) * 100;
       const topPct = (view.y / state.world.height) * 100;
       const widthPct = (view.width / state.world.width) * 100;
@@ -1372,7 +1372,7 @@
       svg.innerHTML = '';
 
       const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-      
+
       // Definition for our new resistor fill patterns
       defs.innerHTML = `
         <pattern id="pat-dotted" x="0" y="0" width="4" height="4" patternUnits="userSpaceOnUse">
@@ -1396,7 +1396,7 @@
       drawWirePreview();
       drawComponents();
       drawJunctions();
-      
+
       // Call updateNavigator at end of render loop
       updateNavigator();
     }
@@ -1480,20 +1480,20 @@
           ? make('g', { transform: 'scale(-1 1)' })
           : scaled;
         if (inner !== scaled) scaled.appendChild(inner);
-        
+
         if (comp.type === 'bulb') drawBulb(inner);
-        if (comp.type === 'battery') drawBattery(inner);
+        if (comp.type === 'battery') drawBattery(inner, comp.cells || 2);
         if (comp.type === 'dc-supply') drawDcSupply(inner);
         if (comp.type === 'power-supply') drawPowerSupply(inner);
         if (comp.type === 'ac-supply') drawAcSupply(inner);
         if (comp.type === 'capacitor') drawCapacitor(inner);
-        
+
         // Push the fill pattern to the resistor components
         if (comp.type === 'resistor') drawResistor(inner, comp.fillPattern);
         if (comp.type === 'variable-resistor') drawVariableResistor(inner, comp.fillPattern);
         if (comp.type === 'potentiometer') drawPotentiometer(inner, comp.fillPattern);
         if (comp.type === 'thermistor') drawThermistor(inner, comp.fillPattern);
-        
+
         if (comp.type === 'bell') drawBell(inner);
         if (comp.type === 'ldr') drawLdr(inner);
         if (comp.type === 'heater') drawHeater(inner);
@@ -1585,22 +1585,28 @@
       g.appendChild(make('line', { x1: -offset, y1: offset, x2: offset, y2: -offset, stroke: '#111827', 'stroke-width': 2.4, 'stroke-linecap': 'round' }));
     }
 
-    function drawBattery(g) {
+    function drawBattery(g, cellCount = 2) {
+      const cells = Math.max(1, Math.min(8, Number(cellCount) || 2));
+      const halfWidth = 17 + cells * 9;
+      const firstLongX = 5 - cells * 9;
+      const lastShortX = firstLongX + (cells - 1) * 18 + 8;
+
+      // Mask any canvas wire behind the battery plates.
       g.appendChild(make('line', {
-        x1: -20, y1: 0, x2: 20, y2: 0,
+        x1: firstLongX, y1: 0, x2: lastShortX, y2: 0,
         stroke: 'white', 'stroke-width': 8, 'stroke-linecap': 'butt'
       }));
 
-      g.appendChild(make('line', { x1: -28, y1: 0, x2: -18, y2: 0, stroke: '#111827', 'stroke-width': 2.4 }));
-      g.appendChild(make('line', { x1: 8, y1: 0, x2: 28, y2: 0, stroke: '#111827', 'stroke-width': 2.4 }));
+      // Only the two outside ends of the complete battery set have wire leads.
+      g.appendChild(make('line', { x1: -halfWidth, y1: 0, x2: firstLongX, y2: 0, stroke: '#111827', 'stroke-width': 2.4 }));
+      g.appendChild(make('line', { x1: lastShortX, y1: 0, x2: halfWidth, y2: 0, stroke: '#111827', 'stroke-width': 2.4 }));
 
-      // Cell 1
-      g.appendChild(make('line', { x1: -18, y1: -15, x2: -18, y2: 15, stroke: '#111827', 'stroke-width': 2.4 }));
-      g.appendChild(make('line', { x1: -10, y1: -9, x2: -10, y2: 9, stroke: '#111827', 'stroke-width': 2.4 }));
-      g.appendChild(make('line', { x1: -10, y1: 0, x2: 0, y2: 0, stroke: '#111827', 'stroke-width': 2.4 }));
-      // Cell 2
-      g.appendChild(make('line', { x1: 0, y1: -15, x2: 0, y2: 15, stroke: '#111827', 'stroke-width': 2.4 }));
-      g.appendChild(make('line', { x1: 8, y1: -9, x2: 8, y2: 9, stroke: '#111827', 'stroke-width': 2.4 }));
+      for (let i = 0; i < cells; i++) {
+        const longX = firstLongX + i * 18;
+        const shortX = longX + 8;
+        g.appendChild(make('line', { x1: longX, y1: -15, x2: longX, y2: 15, stroke: '#111827', 'stroke-width': 2.4 }));
+        g.appendChild(make('line', { x1: shortX, y1: -9, x2: shortX, y2: 9, stroke: '#111827', 'stroke-width': 2.4 }));
+      }
     }
 
     function drawDcSupply(g) {
@@ -1675,7 +1681,7 @@
     function drawResistor(g, fillPattern = 'white') {
       g.appendChild(make('line', { x1: -42, y1: 0, x2: -22, y2: 0, stroke: '#111827', 'stroke-width': 2.4 }));
       g.appendChild(make('line', { x1: 22, y1: 0, x2: 42, y2: 0, stroke: '#111827', 'stroke-width': 2.4 }));
-      
+
       // 1. Solid white background to hide wires underneath
       g.appendChild(make('rect', { x: -22, y: -10, width: 44, height: 20, fill: 'white', stroke: 'none' }));
 
@@ -1773,14 +1779,14 @@
       const y_top = -14 * blocks;
       const dy = (y_bottom - y_top) / coils;
 
-      g.appendChild(make('rect', { 
-        x: -14, 
-        y: y_top - 10, 
-        width: 28, 
-        height: (y_bottom - y_top) + 20, 
-        fill: 'white', 
-        stroke: '#111827', 
-        'stroke-width': 2.4 
+      g.appendChild(make('rect', {
+        x: -14,
+        y: y_top - 10,
+        width: 28,
+        height: (y_bottom - y_top) + 20,
+        fill: 'white',
+        stroke: '#111827',
+        'stroke-width': 2.4
       }));
 
       // X offsets: -28 * 0.8 = -22.4 (exact horizontal grid lock)

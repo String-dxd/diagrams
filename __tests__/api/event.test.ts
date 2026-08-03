@@ -8,6 +8,8 @@ import { NextRequest } from 'next/server'
 jest.mock('@/lib/db', () => ({ getDb: jest.fn() }))
 import { getDb } from '@/lib/db'
 
+const VALID_UUID = '123e4567-e89b-42d3-a456-426614174000'
+
 function makeRequest(body: unknown) {
   return new NextRequest('http://localhost/api/event', {
     method: 'POST',
@@ -33,13 +35,13 @@ describe('POST /api/event', () => {
   })
 
   it('returns 400 when tool is missing', async () => {
-    const res = await POST(makeRequest({ uuid: 'abc' }))
+    const res = await POST(makeRequest({ uuid: VALID_UUID }))
     expect(res.status).toBe(400)
     expect(mockSql).not.toHaveBeenCalled()
   })
 
   it('returns 400 for an unrecognised tool name', async () => {
-    const res = await POST(makeRequest({ uuid: 'abc', tool: 'unknown-tool' }))
+    const res = await POST(makeRequest({ uuid: VALID_UUID, tool: 'unknown-tool' }))
     expect(res.status).toBe(400)
     expect(mockSql).not.toHaveBeenCalled()
   })
@@ -54,12 +56,36 @@ describe('POST /api/event', () => {
     expect(res.status).toBe(400)
   })
 
+  it.each([
+    'user-1',
+    '123e4567-e89b-12d3-a456-426614174000',
+    '123e4567-e89b-42d3-c456-426614174000',
+    'x'.repeat(10_000),
+    123,
+    null,
+  ])('returns 400 for a non-v4 UUID: %p', async uuid => {
+    const res = await POST(makeRequest({ uuid, tool: 'circuit-symbol' }))
+    expect(res.status).toBe(400)
+    expect(mockSql).not.toHaveBeenCalled()
+  })
+
+  it('returns 415 for a non-JSON request', async () => {
+    const req = new NextRequest('http://localhost/api/event', {
+      method: 'POST',
+      body: 'uuid=anything',
+      headers: { 'Content-Type': 'text/plain' },
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(415)
+    expect(mockSql).not.toHaveBeenCalled()
+  })
+
   // --- Rate limiting ---
 
   it('returns 200 and skips inserts when rate limited', async () => {
     mockSql.mockResolvedValueOnce([{ 1: 1 }]) // recent event found → rate limited
 
-    const res = await POST(makeRequest({ uuid: 'user-1', tool: 'circuit-symbol' }))
+    const res = await POST(makeRequest({ uuid: VALID_UUID, tool: 'circuit-symbol' }))
     const json = await res.json()
 
     expect(res.status).toBe(200)
@@ -75,7 +101,7 @@ describe('POST /api/event', () => {
       .mockResolvedValueOnce([])  // upsert user
       .mockResolvedValueOnce([])  // insert event
 
-    const res = await POST(makeRequest({ uuid: 'user-1', tool: 'circuit-symbol' }))
+    const res = await POST(makeRequest({ uuid: VALID_UUID, tool: 'circuit-symbol' }))
     const json = await res.json()
 
     expect(res.status).toBe(200)
@@ -90,7 +116,7 @@ describe('POST /api/event', () => {
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([])
-      const res = await POST(makeRequest({ uuid: 'user-1', tool }))
+      const res = await POST(makeRequest({ uuid: VALID_UUID, tool }))
       expect(res.status).toBe(200)
     }
   })

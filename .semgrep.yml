@@ -1,0 +1,31 @@
+rules:
+  - id: javascript-no-eval
+    message: Dynamic code execution with eval() is not allowed in application code.
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern: eval(...)
+    paths:
+      exclude:
+        - /__tests__/**
+        - /_archive/**
+
+  - id: javascript-no-function-constructor
+    message: Dynamic code execution with the Function constructor is not allowed.
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern: new Function(...)
+    paths:
+      exclude:
+        - /__tests__/**
+        - /_archive/**
+
+  - id: html-no-javascript-url
+    message: 'javascript: URLs execute code in navigation contexts and are not allowed.'
+    severity: ERROR
+    languages: [generic]
+    pattern-regex: '(?i)javascript\s*:'
+    paths:
+      include:
+        - '*.html'
+      exclude:
+        - /_archive/**

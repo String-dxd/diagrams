@@ -55,7 +55,12 @@ describe('Index page', () => {
 
   it('shows the footer with creator credit', () => {
     render(<Home />)
-    expect(screen.getByText(/created by julienne/i)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /string\.sg/i })).toHaveAttribute('href', 'https://string.sg')
+    const footer = screen.getByRole('contentinfo')
+    const link = screen.getByRole('link', { name: 'string.sg' })
+
+    expect(footer).toHaveTextContent('Created by Julienne, supported by string.sg')
+    expect(link).toHaveAttribute('href', 'https://string.sg')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
   })
 })

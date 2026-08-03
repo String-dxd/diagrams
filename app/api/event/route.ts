@@ -2,12 +2,23 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 
 const VALID_TOOLS = new Set(['circuit-symbol', 'circuit-object', 'circuit-secjc', 'water-tank', 'isometric-cube'])
+const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 export async function POST(req: NextRequest) {
+  const contentType = req.headers.get('content-type')?.split(';', 1)[0].trim().toLowerCase()
+  if (contentType !== 'application/json') {
+    return NextResponse.json({}, { status: 415 })
+  }
+
   const body = await req.json().catch(() => null)
   const { uuid, tool } = body ?? {}
 
-  if (!uuid || !tool || !VALID_TOOLS.has(tool)) {
+  if (
+    typeof uuid !== 'string' ||
+    !UUID_V4.test(uuid) ||
+    typeof tool !== 'string' ||
+    !VALID_TOOLS.has(tool)
+  ) {
     return NextResponse.json({}, { status: 400 })
   }
 

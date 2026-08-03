@@ -6,7 +6,7 @@
  */
 const { loadCircuitScript } = require('./helpers')
 
-let snap, gcd, componentSize, getComponentNodes, GRID
+let snap, gcd, componentSize, getComponentNodes, GRID, state, render, undo
 
 beforeAll(() => {
   document.body.innerHTML = `
@@ -45,9 +45,18 @@ beforeAll(() => {
       <div id="minimap-viewport"></div>
     </div>
   `;
-  ({ snap, gcd, componentSize, getComponentNodes, GRID } = loadCircuitScript(
+
+  const svg = document.getElementById('app')
+  svg.createSVGPoint = () => ({
+    x: 0,
+    y: 0,
+    matrixTransform() { return { x: this.x, y: this.y } },
+  })
+  svg.getScreenCTM = () => ({ inverse: () => ({}) })
+
+  ;({ snap, gcd, componentSize, getComponentNodes, GRID, state, render, undo } = loadCircuitScript(
     'circuit_diagram_creatorv3.html',
-    ['snap', 'gcd', 'componentSize', 'getComponentNodes', 'GRID']
+    ['snap', 'gcd', 'componentSize', 'getComponentNodes', 'GRID', 'state', 'render', 'undo']
   ))
 })
 
@@ -127,5 +136,28 @@ describe('getComponentNodes()', () => {
     expect(nodes[0].y).toBeCloseTo(100)
     expect(nodes[1].x).toBeCloseTo(128)
     expect(nodes[1].y).toBeCloseTo(100)
+  })
+})
+
+describe('move history', () => {
+  it('undoes a drag back to the component position before the move', () => {
+    const svg = document.getElementById('app')
+    state.tool = 'select'
+    state.wires = []
+    state.components = [{ id: 1, type: 'bulb', x: 112, y: 112, rotation: 0 }]
+    state.history = []
+    state.future = []
+    state.nextId = 2
+    state.selected = null
+    state.dragging = null
+    render()
+
+    svg.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 112, clientY: 112 }))
+    svg.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 140, clientY: 112 }))
+    svg.dispatchEvent(new MouseEvent('pointerup', { bubbles: true, clientX: 140, clientY: 112 }))
+
+    expect(state.components[0].x).toBe(140)
+    undo()
+    expect(state.components[0].x).toBe(112)
   })
 })
