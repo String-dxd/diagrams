@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cube Solid Builder</title>
+  <style>
+    :root {
+      --bg: #f7f7f5;
+      --panel: #ffffff;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --line: #111827;
+      --accent: #2563eb;
+      --face-top: #ffffff;
+      --face-left: #f3f4f6;
+      --face-right: #e5e7eb;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 24px;
+      line-height: 1.2;
+    }
+
+    p.lead {
+      margin: 0 0 14px;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 13px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+    }
+
+    .controls {
+      display: grid;
+      gap: 10px;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    input, button {
+      width: 100%;
+      font-size: 13px;
+      border-radius: 10px;
+      border: 1px solid #d1d5db;
+      padding: 8px 10px;
+    }
+
+    input[type="range"] { padding: 0; }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 700;
+      border: none;
+      background: var(--accent);
+      color: white;
+    }
+
+    button.secondary { background: #374151; }
+    button.tertiary { background: #0f766e; }
+
+    .small {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    .stat {
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 8px;
+      background: #fafafa;
+      font-size: 12px;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 18px;
+      margin-top: 4px;
+    }
+
+    .canvas-panel {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .canvas-head {
+      padding: 12px 14px;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .canvas-wrap {
+      padding: 10px;
+      background: #fcfcfc;
+    }
+
+    canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: white;
+      border-radius: 16px;
+      border: 1px solid #e5e7eb;
+      cursor: pointer;
+    }
+
+    .cursor-label {
+      position: fixed;
+      z-index: 20;
+      pointer-events: none;
+      background: rgba(17, 24, 39, 0.94);
+      color: white;
+      padding: 6px 10px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.2;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+      transform: translate(12px, 12px);
+      display: none;
+      white-space: nowrap;
+    }
+
+    .pill {
+      display: inline-block;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    ul.compact {
+      margin: 0;
+      padding-left: 16px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+
+    .preview-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(17, 24, 39, 0.62);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 40;
+    }
+
+    .preview-overlay.open {
+      display: flex;
+    }
+
+    .preview-dialog {
+      width: min(1100px, 100%);
+      max-height: 90vh;
+      overflow: auto;
+      background: #ffffff;
+      border-radius: 16px;
+      border: 1px solid #d1d5db;
+      box-shadow: 0 24px 50px rgba(0, 0, 0, 0.18);
+      padding: 14px;
+    }
+
+    .preview-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .preview-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 10px;
+      background: #fafafa;
+    }
+
+    .preview-card h3 {
+      margin: 0 0 8px;
+      font-size: 14px;
+    }
+
+    .preview-card canvas {
+      width: 100%;
+      height: auto;
+      background: white;
+      border-radius: 10px;
+      border: 1px solid #d1d5db;
+      cursor: default;
+      margin-bottom: 8px;
+    }
+
+    .preview-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .preview-actions button {
+      width: auto;
+      min-width: 0;
+      flex: 1;
+    }
+
+
+    @media (max-width: 920px) {
+      .wrap { padding: 16px; }
+      .layout {
+        grid-template-columns: minmax(260px, 300px) minmax(420px, 1fr);
+        gap: 12px;
+        overflow-x: auto;
+        align-items: start;
+      }
+      .panel { min-width: 0; }
+      .canvas-panel { min-width: 520px; }
+      .preview-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="cursorLabel" class="cursor-label"></div>
+  <div id="previewOverlay" class="preview-overlay" aria-hidden="true">
+    <div class="preview-dialog">
+      <div class="preview-head">
+        <div>
+          <strong>Export preview</strong><br />
+          <span class="small">Preview uses the current export settings for dots and walls.</span>
+        </div>
+        <button id="closePreviewBtn" class="secondary" style="width:auto;">Close</button>
+      </div>
+      <div class="preview-grid">
+        <div class="preview-card">
+          <h3>Isometric export</h3>
+          <canvas id="isoPreviewCanvas" width="920" height="680"></canvas>
+          <div class="preview-actions">
+            <button id="downloadIsoFromPreviewBtn" class="tertiary">Download Iso PNG</button>
+          </div>
+        </div>
+        <div class="preview-card">
+          <h3>Orthographic views export</h3>
+          <canvas id="viewsPreviewCanvas" width="1400" height="520"></canvas>
+          <div class="preview-actions">
+            <button id="downloadViewsFromPreviewBtn" class="secondary">Download Views PNG</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="wrap">
+    <h1>Cube Solid Builder</h1>
+    <p class="lead">Generate a random connected solid, then edit it directly on the isometric grid. Left click a highlighted face to add a cube. Right click a visible top face to remove the top cube from that stack. <b> Scroll down to bottom of left panel for editing guide</b></p>
+
+    <div class="layout">
+      <div class="panel controls">
+        <div>
+          <label for="cubeCount">Random cube count</label>
+          <input id="cubeCount" type="number" min="1" max="60" value="8" />
+          <div class="small">Used when creating a fresh random solid.</div>
+        </div>
+
+        <div>
+          <label for="spread">Shape spread</label>
+          <input id="spread" type="range" min="0" max="100" value="55" />
+          <div class="small">Lower values favour taller stacks; higher values favour wider solids.</div>
+        </div>
+
+        <div class="row">
+          <button id="generateBtn">Randomise</button>
+          <button id="resetBtn" class="secondary">Clear</button>
+        </div>
+
+        <div class="row">
+          <button id="previewExportsBtn" class="tertiary">Preview Exports</button>
+          <button id="toggleGuidesBtn" class="secondary">Hide Guides</button>
+        </div>
+
+        <button id="toggleFrontSideBtn" class="secondary">Front/Side Mapping: Standard</button>
+
+        <div class="row">
+          <button id="toggleWallsBtn" class="secondary">Hide Walls</button>
+          <button id="toggleDotsBtn" class="secondary">Hide Dotted Grid</button>
+        </div>
+
+        <div class="panel" style="padding:10px; border-radius:10px;">
+          <strong>Export settings</strong>
+          <div class="row" style="margin-top:8px;">
+            <button id="toggleExportDotsBtn" class="secondary">Export Dots: On</button>
+            <button id="toggleExportWallsBtn" class="secondary">Export Walls: On</button>
+          </div>
+          <div class="row" style="margin-top:8px;">
+            <button id="toggleExportDirectionLabelsBtn" class="secondary">Export Front/Side Labels: On</button>
+          </div>
+        </div>
+
+        <div class="stats">
+          <div class="stat">Cubes<strong id="statCubes">0</strong></div>
+          <div class="stat">Columns<strong id="statColumns">0</strong></div>
+          <div class="stat">Max height<strong id="statHeight">0</strong></div>
+          <div class="stat">Footprint<strong id="statFootprint">0</strong></div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div>
+            <label>How editing works</label>
+            <ul class="compact">
+              <li><b>To add cube:</b> Left click a highlighted face to attach one cube to that surface.</li>
+              <li><b>To remove cube:</b> Right click the visible top face of a stack to remove the top cube.</li>
+              <li>Top highlights add a cube on top of a stack; other highlights add a grounded neighbouring cube.</li>
+	<li>Dots and walls are loaded by default for both the display and export preview. Toggle them if you want a cleaner output.</li>
+<li>Hide guides to view only the solid.</li>
+	<li>Views preview/export shows Top, Front and Side. You can swap the Front/Side mapping with the toggle above; the Top View rotates to face the selected Front direction.</li>
+              <li>Floating cubes are not allowed in this builder.</li>\n\t<li>Random solids are now generated as a solid terraced footprint, so they do not create holes between columns.</li>
+              <li>Wall guides are anchored to the far back bottom corner of the solid.</li>
+	<li>Starting random solids now try to avoid hidden cubes from the default isometric viewpoint.</li>
+	
+            </ul>
+          </div>
+          <div class="small">
+            Conceptualised and vibe coded by <a href="mailto:tan_jing_yan@schools.gov.sg">Tan Jing Yan (Julienne)</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel canvas-panel">
+        <div class="canvas-head">
+          <div>
+            <strong>Interactive Isometric Grid</strong><br />
+            <span class="small" id="hoverHint">Left click to add cubes, right click to remove cubes</span>
+          </div>
+          <span class="pill" id="shapeTag">Ready</span>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="canvas" width="920" height="680"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const cubeCountInput = document.getElementById('cubeCount');
+    const spreadInput = document.getElementById('spread');
+    const generateBtn = document.getElementById('generateBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const toggleWallsBtn = document.getElementById('toggleWallsBtn');
+    const previewExportsBtn = document.getElementById('previewExportsBtn');
+    const toggleGuidesBtn = document.getElementById('toggleGuidesBtn');
+    const toggleFrontSideBtn = document.getElementById('toggleFrontSideBtn');
+    const toggleDotsBtn = document.getElementById('toggleDotsBtn');
+    const toggleExportDotsBtn = document.getElementById('toggleExportDotsBtn');
+    const toggleExportWallsBtn = document.getElementById('toggleExportWallsBtn');
+    const toggleExportDirectionLabelsBtn = document.getElementById('toggleExportDirectionLabelsBtn');
+    const shapeTag = document.getElementById('shapeTag');
+    const hoverHint = document.getElementById('hoverHint');
+    const cursorLabel = document.getElementById('cursorLabel');
+    const previewOverlay = document.getElementById('previewOverlay');
+    const closePreviewBtn = document.getElementById('closePreviewBtn');
+    const isoPreviewCanvas = document.getElementById('isoPreviewCanvas');
+    const viewsPreviewCanvas = document.getElementById('viewsPreviewCanvas');
+    const downloadIsoFromPreviewBtn = document.getElementById('downloadIsoFromPreviewBtn');
+    const downloadViewsFromPreviewBtn = document.getElementById('downloadViewsFromPreviewBtn');
+
+    const statCubes = document.getElementById('statCubes');
+    const statColumns = document.getElementById('statColumns');
+    const statHeight = document.getElementById('statHeight');
+    const statFootprint = document.getElementById('statFootprint');
+
+    const state = {
+      heights: new Map(),
+      addTargets: [],
+      removeTargets: [],
+      faceTargets: [],
+      showGuides: true,
+      showDots: true,
+      exportDots: true,
+      showWalls: true,
+      exportWalls: true,
+      exportDirectionLabels: true,
+      swapFrontSide: false,
+      randomCounter: 0,
+      hoveredTarget: null
+    };
+
+    function mulberry32(a) {
+      return function() {
+        let t = a += 0x6D2B79F5;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function columnKey(x, y) { return `${x},${y}`; }
+    function parseColumnKey(k) { const [x, y] = k.split(',').map(Number); return { x, y }; }
+    function setHeight(x, y, h) { const k = columnKey(x, y); if (h <= 0) state.heights.delete(k); else state.heights.set(k, h); }
+    function getHeight(x, y) { return state.heights.get(columnKey(x, y)) || 0; }
+    function totalCubes() { let total = 0; for (const h of state.heights.values()) total += h; return total; }
+    function setMapHeight(map, x, y, h) { const k = columnKey(x, y); if (h <= 0) map.delete(k); else map.set(k, h); }
+    function getMapHeight(map, x, y) { return map.get(columnKey(x, y)) || 0; }
+
+    function countHiddenCubes(map) {
+      let hidden = 0;
+      for (const [k, h] of map.entries()) {
+        const { x, y } = parseColumnKey(k);
+        const leftH = getMapHeight(map, x - 1, y);
+        const rightH = getMapHeight(map, x, y - 1);
+        for (let z = 0; z < h; z++) {
+          const topVisible = z === h - 1;
+          const leftVisible = leftH <= z;
+          const rightVisible = rightH <= z;
+          if (!topVisible && !leftVisible && !rightVisible) hidden += 1;
+        }
+      }
+      return hidden;
+    }
+
+    function totalMapCubes(map) {
+      let total = 0;
+      for (const h of map.values()) total += h;
+      return total;
+    }
+
+    function getAxisMax(map, axis) {
+      let max = 0;
+      for (const [k] of map.entries()) {
+        const { x, y } = parseColumnKey(k);
+        max = Math.max(max, axis === 'x' ? x : y);
+      }
+      return max;
+    }
+
+    function hasSolidAnchoredFootprint(map) {
+      if (!map.size) return true;
+      const maxX = getAxisMax(map, 'x');
+      const maxY = getAxisMax(map, 'y');
+
+      for (let y = 0; y <= maxY; y++) {
+        let seenGap = false;
+        for (let x = 0; x <= maxX; x++) {
+          const occupied = map.has(columnKey(x, y));
+          if (!occupied) {
+            seenGap = true;
+          } else if (seenGap) {
+            return false;
+          }
+        }
+      }
+
+      for (let x = 0; x <= maxX; x++) {
+        let seenGap = false;
+        for (let y = 0; y <= maxY; y++) {
+          const occupied = map.has(columnKey(x, y));
+          if (!occupied) {
+            seenGap = true;
+          } else if (seenGap) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    }
+
+    function getAxisProfiles(map) {
+      const maxX = getAxisMax(map, 'x');
+      const maxY = getAxisMax(map, 'y');
+      const front = [];
+      const side = [];
+
+      for (let x = 0; x <= maxX; x++) front.push(getMapHeight(map, x, 0));
+      for (let y = 0; y <= maxY; y++) side.push(getMapHeight(map, 0, y));
+
+      return { front, side };
+    }
+
+    function isNonIncreasingProfile(profile) {
+      for (let i = 1; i < profile.length; i++) {
+        if (profile[i] > profile[i - 1]) return false;
+      }
+      return true;
+    }
+
+    function isTerracedRandomShape(map) {
+      if (!hasSolidAnchoredFootprint(map)) return false;
+
+      for (const [k, h] of map.entries()) {
+        const { x, y } = parseColumnKey(k);
+        if (x < 0 || y < 0) return false;
+        if (x > 0 && y > 0 && h > 1) return false;
+      }
+
+      const { front, side } = getAxisProfiles(map);
+      if (!isNonIncreasingProfile(front) || !isNonIncreasingProfile(side)) return false;
+
+      return countHiddenCubes(map) === 0;
+    }
+
+    function collectTerracedCandidates(map) {
+      const candidates = [];
+      const maxX = getAxisMax(map, 'x');
+      const maxY = getAxisMax(map, 'y');
+
+      for (let x = 0; x <= maxX; x++) {
+        const current = getMapHeight(map, x, 0);
+        const nextHeight = current + 1;
+        const leftOk = x === 0 || getMapHeight(map, x - 1, 0) >= nextHeight;
+        const rightOk = x === maxX || getMapHeight(map, x + 1, 0) <= nextHeight;
+        if (leftOk && rightOk) {
+          candidates.push({ type: x === 0 ? 'raise-origin' : 'raise-front', x, y: 0, h: nextHeight });
+        }
+      }
+
+      for (let y = 1; y <= maxY; y++) {
+        const current = getMapHeight(map, 0, y);
+        const nextHeight = current + 1;
+        const backOk = getMapHeight(map, 0, y - 1) >= nextHeight;
+        const frontOk = y === maxY || getMapHeight(map, 0, y + 1) <= nextHeight;
+        if (backOk && frontOk) {
+          candidates.push({ type: 'raise-side', x: 0, y, h: nextHeight });
+        }
+      }
+
+      candidates.push({ type: 'new-front-axis', x: maxX + 1, y: 0, h: 1 });
+      candidates.push({ type: 'new-side-axis', x: 0, y: maxY + 1, h: 1 });
+
+      for (let y = 1; y <= maxY; y++) {
+        for (let x = 1; x <= maxX; x++) {
+          if (map.has(columnKey(x, y))) continue;
+          if (getMapHeight(map, x - 1, y) < 1) continue;
+          if (getMapHeight(map, x, y - 1) < 1) continue;
+          candidates.push({ type: 'fill-interior', x, y, h: 1 });
+        }
+      }
+
+      return candidates;
+    }
+
+    function scoreTerracedCandidate(candidate, spread, rand) {
+      const wideBias = spread / 100;
+      const distance = candidate.x + candidate.y;
+      const heightPenalty = Math.max(0, candidate.h - 1) * (0.8 - wideBias * 0.45);
+      let score = distance * (0.32 + wideBias * 0.18) + heightPenalty;
+
+      if (candidate.type === 'raise-origin') score += (wideBias * 2.2);
+      if (candidate.type === 'raise-front' || candidate.type === 'raise-side') score += (wideBias * 1.4);
+      if (candidate.type === 'new-front-axis' || candidate.type === 'new-side-axis') score += ((1 - wideBias) * 1.6);
+      if (candidate.type === 'fill-interior') score += ((1 - wideBias) * 0.7);
+
+      score += rand() * 0.18;
+      return score;
+    }
+
+    function buildFallbackVisibleSolid(n, spread) {
+      const heights = new Map();
+      heights.set(columnKey(0, 0), 1);
+      const rand = mulberry32((Date.now() ^ (n * 2654435761) ^ Math.floor(spread * 131)) >>> 0);
+
+      while (totalMapCubes(heights) < n) {
+        const candidates = collectTerracedCandidates(heights)
+          .filter(candidate => {
+            const next = new Map(heights);
+            setMapHeight(next, candidate.x, candidate.y, candidate.h);
+            return isTerracedRandomShape(next);
+          });
+
+        candidates.sort((a, b) => scoreTerracedCandidate(a, spread, rand) - scoreTerracedCandidate(b, spread, rand));
+        const sampleWindow = Math.max(1, Math.ceil(candidates.length * 0.65));
+        const chosen = candidates[Math.floor(rand() * sampleWindow)];
+        setMapHeight(heights, chosen.x, chosen.y, chosen.h);
+      }
+
+      return { heights };
+    }
+
+    function generateVisibleSolid(n, spread) {
+      const seed = Date.now() + (state.randomCounter++ * 1013904223) + Math.floor(Math.random() * 1e9);
+      const rand = mulberry32(seed >>> 0);
+      const heights = new Map();
+      heights.set(columnKey(0, 0), 1);
+      let safety = 0;
+
+      while (totalMapCubes(heights) < n && safety < n * 80) {
+        safety += 1;
+        const candidates = collectTerracedCandidates(heights)
+          .filter(candidate => {
+            const next = new Map(heights);
+            setMapHeight(next, candidate.x, candidate.y, candidate.h);
+            return isTerracedRandomShape(next);
+          });
+
+        if (!candidates.length) break;
+
+        candidates.sort((a, b) => scoreTerracedCandidate(a, spread, rand) - scoreTerracedCandidate(b, spread, rand));
+        const sampleWindow = Math.max(1, Math.ceil(candidates.length * 0.7));
+        const chosen = candidates[Math.floor(rand() * sampleWindow)];
+        setMapHeight(heights, chosen.x, chosen.y, chosen.h);
+      }
+
+      if (totalMapCubes(heights) === n && isTerracedRandomShape(heights)) {
+        return { heights };
+      }
+
+      return buildFallbackVisibleSolid(n, spread);
+    }
+
+    function isoProject(x, y, z, scale, ox, oy) {
+      return {
+        x: ox + (x - y) * scale,
+        y: oy + (x + y) * scale * 0.55 - z * scale * 1.1
+      };
+    }
+
+    function getCubePolygons(x, y, z, scale, ox, oy) {
+      const p = isoProject(x, y, z, scale, ox, oy);
+      const top = { x: p.x, y: p.y - scale * 0.55 };
+      const right = { x: p.x + scale, y: p.y };
+      const bottom = { x: p.x, y: p.y + scale * 0.55 };
+      const left = { x: p.x - scale, y: p.y };
+      const down = scale * 1.1;
+      const l2 = { x: left.x, y: left.y + down };
+      const b2 = { x: bottom.x, y: bottom.y + down };
+      const r2 = { x: right.x, y: right.y + down };
+      return {
+        top: [top, right, bottom, left],
+        left: [left, bottom, b2, l2],
+        right: [bottom, right, r2, b2]
+      };
+    }
+
+    function drawPath(ctx2, points) {
+      ctx2.beginPath();
+      ctx2.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) ctx2.lineTo(points[i].x, points[i].y);
+      ctx2.closePath();
+    }
+
+    function fillPoly(points, fill, stroke = '#111827', lineWidth = 2, drawCtx = ctx) {
+      drawPath(drawCtx, points);
+      drawCtx.fillStyle = fill;
+      drawCtx.fill();
+      drawCtx.lineWidth = lineWidth;
+      drawCtx.strokeStyle = stroke;
+      drawCtx.lineJoin = 'round';
+      drawCtx.stroke();
+    }
+
+    function strokePoly(points, stroke = '#ea580c', lineWidth = 3) {
+      drawPath(ctx, points);
+      ctx.lineWidth = lineWidth;
+      ctx.strokeStyle = stroke;
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+    }
+
+    function pointInPolygon(px, py, poly) {
+      let inside = false;
+      for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        const xi = poly[i].x, yi = poly[i].y;
+        const xj = poly[j].x, yj = poly[j].y;
+        const intersect = ((yi > py) !== (yj > py)) &&
+          (px < (xj - xi) * (py - yi) / ((yj - yi) || 1e-9) + xi);
+        if (intersect) inside = !inside;
+      }
+      return inside;
+    }
+
+    function getBounds() {
+      const entries = Array.from(state.heights.entries());
+      if (!entries.length) return { minX: -2, maxX: 2, minY: -2, maxY: 2, maxH: 1 };
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, maxH = 0;
+      for (const [k, h] of entries) {
+        const { x, y } = parseColumnKey(k);
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x);
+        minY = Math.min(minY, y);
+        maxY = Math.max(maxY, y);
+        maxH = Math.max(maxH, h);
+      }
+      return { minX, maxX, minY, maxY, maxH };
+    }
+
+    function computeRenderParams(width = canvas.width, height = canvas.height) {
+      const bounds = getBounds();
+      const pad = 2;
+      const widthUnits = (bounds.maxX - bounds.minX + 1 + pad * 2) + (bounds.maxY - bounds.minY + 1 + pad * 2);
+      const heightUnits = ((bounds.maxX - bounds.minX + 1 + pad * 2) + (bounds.maxY - bounds.minY + 1 + pad * 2)) * 0.55 + Math.max(2, bounds.maxH + 2) * 1.1;
+      const scaleX = (width - 180) / Math.max(6, widthUnits);
+      const scaleY = (height - 160) / Math.max(6, heightUnits);
+      const scale = Math.max(18, Math.min(42, Math.min(scaleX, scaleY)));
+      const centerX = (bounds.minX + bounds.maxX) / 2;
+      const centerY = (bounds.minY + bounds.maxY) / 2;
+      const ox = width / 2 - (centerX - centerY) * scale;
+      const oy = height / 2 + ((centerX + centerY) * scale * 0.12) + 90;
+      return { bounds, scale, ox, oy };
+    }
+
+    function drawProjectedDots(ctx2, width, height, params) {
+      const { bounds, scale, ox, oy } = params;
+      const seen = new Set();
+      const minX = bounds.minX - 6;
+      const maxX = bounds.maxX + 6;
+      const minY = bounds.minY - 6;
+      const maxY = bounds.maxY + 6;
+      const maxZ = Math.max(5, bounds.maxH + 4);
+
+      ctx2.save();
+      ctx2.fillStyle = '#111827';
+
+      for (let z = 0; z <= maxZ; z++) {
+        for (let x = minX; x <= maxX; x++) {
+          for (let y = minY; y <= maxY; y++) {
+            const p = isoProject(x, y, z, scale, ox, oy);
+            const pts = [
+              { x: p.x, y: p.y - scale * 0.55 },
+              { x: p.x + scale, y: p.y },
+              { x: p.x, y: p.y + scale * 0.55 },
+              { x: p.x - scale, y: p.y }
+            ];
+            for (const pt of pts) {
+              const rx = Math.round(pt.x);
+              const ry = Math.round(pt.y);
+              if (rx < 16 || rx > width - 16 || ry < 16 || ry > height - 16) continue;
+              const key = `${rx},${ry}`;
+              if (seen.has(key)) continue;
+              seen.add(key);
+              ctx2.beginPath();
+              ctx2.arc(rx, ry, 3.1, 0, Math.PI * 2);
+              ctx2.fill();
+            }
+          }
+        }
+      }
+      ctx2.restore();
+    }
+
+    function lineExists(edges, a, b) {
+      const key1 = `${Math.round(a.x)},${Math.round(a.y)}|${Math.round(b.x)},${Math.round(b.y)}`;
+      const key2 = `${Math.round(b.x)},${Math.round(b.y)}|${Math.round(a.x)},${Math.round(a.y)}`;
+      return edges.has(key1) || edges.has(key2);
+    }
+
+    function collectVisibleEdges(params) {
+      const { scale, ox, oy } = params;
+      const drawList = [];
+      for (const [k, h] of state.heights.entries()) {
+        const { x, y } = parseColumnKey(k);
+        for (let z = 0; z < h; z++) drawList.push({ x, y, z, h });
+      }
+      drawList.sort((a, b) => {
+        const da = a.x + a.y + a.z;
+        const db = b.x + b.y + b.z;
+        if (da !== db) return da - db;
+        if (a.z !== b.z) return a.z - b.z;
+        return a.x - b.x;
+      });
+      const edges = new Set();
+      for (const cube of drawList) {
+        const polys = getCubePolygons(cube.x, cube.y, cube.z, scale, ox, oy);
+        const segments = [
+          [polys.top[0], polys.top[1]],[polys.top[1], polys.top[2]],[polys.top[2], polys.top[3]],[polys.top[3], polys.top[0]],
+          [polys.left[0], polys.left[1]],[polys.left[1], polys.left[2]],[polys.left[2], polys.left[3]],[polys.left[3], polys.left[0]],
+          [polys.right[0], polys.right[1]],[polys.right[1], polys.right[2]],[polys.right[2], polys.right[3]],[polys.right[3], polys.right[0]]
+        ];
+        for (const [a,b] of segments) {
+          const key = `${Math.round(a.x)},${Math.round(a.y)}|${Math.round(b.x)},${Math.round(b.y)}`;
+          const rev = `${Math.round(b.x)},${Math.round(b.y)}|${Math.round(a.x)},${Math.round(a.y)}`;
+          edges.add(key);
+          edges.add(rev);
+        }
+      }
+      return edges;
+    }
+
+    function getGuideGeometry(params) {
+      const { bounds, scale, ox, oy } = params;
+      const anchor = isoProject(bounds.minX, bounds.minY, 0, scale, ox, oy);
+      const corner = { x: anchor.x, y: anchor.y + scale * 0.55 };
+
+      const verticalLen = (bounds.maxH + 1.1) * scale * 1.1;
+      const frontLen = (bounds.maxX - bounds.minX + 2.15) * scale;
+      const sideLen = (bounds.maxY - bounds.minY + 2.15) * scale;
+
+      return {
+        corner,
+        up: { x: corner.x, y: corner.y - verticalLen },
+        downLeft: { x: corner.x - sideLen, y: corner.y + sideLen * 0.55 },
+        downRight: { x: corner.x + frontLen, y: corner.y + frontLen * 0.55 },
+        scale
+      };
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function drawLabelChip(ctx2, text, x, y, width, height) {
+      ctx2.save();
+      ctx2.font = 'bold 18px Arial';
+      const textWidth = ctx2.measureText(text).width;
+      const padX = 10;
+      const boxW = textWidth + padX * 2;
+      const boxH = 26;
+      const bx = clamp(x - boxW / 2, 8, width - boxW - 8);
+      const by = clamp(y - boxH / 2, 8, height - boxH - 8);
+
+      ctx2.fillStyle = 'rgba(255,255,255,0.94)';
+      ctx2.strokeStyle = '#111827';
+      ctx2.lineWidth = 1.5;
+      ctx2.beginPath();
+      ctx2.rect(bx, by, boxW, boxH);
+      ctx2.fill();
+      ctx2.stroke();
+
+      ctx2.fillStyle = '#111827';
+      ctx2.textAlign = 'center';
+      ctx2.textBaseline = 'middle';
+      ctx2.fillText(text, bx + boxW / 2, by + boxH / 2 + 1);
+      ctx2.restore();
+    }
+
+    function getFrontSideMapping() {
+      return state.swapFrontSide
+        ? {
+            leftLabel: 'SIDE',
+            rightLabel: 'FRONT',
+            topGrid: 'topGridSwapped',
+            frontGrid: 'sideGrid',
+            sideGrid: 'frontGrid'
+          }
+        : {
+            leftLabel: 'FRONT',
+            rightLabel: 'SIDE',
+            topGrid: 'topGridStandard',
+            frontGrid: 'frontGrid',
+            sideGrid: 'sideGrid'
+          };
+    }
+
+    function drawDirectionLabels(ctx2, width, height, params) {
+      const { downLeft, downRight, scale } = getGuideGeometry(params);
+      const mapping = getFrontSideMapping();
+      drawLabelChip(ctx2, mapping.leftLabel, downLeft.x - scale * 0.22, downLeft.y + scale * 0.15, width, height);
+      drawLabelChip(ctx2, mapping.rightLabel, downRight.x + scale * 0.22, downRight.y + scale * 0.15, width, height);
+    }
+
+    function drawWallGuides(ctx2, width, height, params) {
+      const { corner, up, downLeft, downRight } = getGuideGeometry(params);
+
+      ctx2.save();
+      ctx2.strokeStyle = '#374151';
+      ctx2.lineWidth = 2.2;
+      ctx2.lineCap = 'round';
+
+      const lines = [
+        [corner, up],
+        [corner, downLeft],
+        [corner, downRight]
+      ];
+
+      for (const [a, b] of lines) {
+        if ((a.x < -20 && b.x < -20) || (a.x > width + 20 && b.x > width + 20)) continue;
+        if ((a.y < -20 && b.y < -20) || (a.y > height + 20 && b.y > height + 20)) continue;
+        ctx2.beginPath();
+        ctx2.moveTo(Math.round(a.x), Math.round(a.y));
+        ctx2.lineTo(Math.round(b.x), Math.round(b.y));
+        ctx2.stroke();
+      }
+
+      ctx2.restore();
+    }
+
+    function drawViewGrid(ctx2, cols, rows, cell, ox, oy) {
+      ctx2.strokeStyle = '#cbd5e1';
+      ctx2.lineWidth = 1;
+      for (let x = 0; x <= cols; x++) {
+        ctx2.beginPath();
+        ctx2.moveTo(ox + x * cell, oy);
+        ctx2.lineTo(ox + x * cell, oy + rows * cell);
+        ctx2.stroke();
+      }
+      for (let y = 0; y <= rows; y++) {
+        ctx2.beginPath();
+        ctx2.moveTo(ox, oy + y * cell);
+        ctx2.lineTo(ox + cols * cell, oy + y * cell);
+        ctx2.stroke();
+      }
+    }
+
+    function sameTarget(a, b) {
+      return !!a && !!b && a.kind === b.kind && a.x === b.x && a.y === b.y && a.h === b.h;
+    }
+
+    function drawGhostTarget(target, scale, ox, oy) {
+      const polys = getCubePolygons(target.x, target.y, target.h - 1, scale, ox, oy);
+      const hovered = state.hoveredTarget && state.hoveredTarget.target && sameTarget(state.hoveredTarget.target, target);
+      fillPoly(polys.left, hovered ? 'rgba(249,115,22,0.18)' : 'rgba(37,99,235,0.08)', hovered ? 'rgba(249,115,22,0.65)' : 'rgba(37,99,235,0.25)', hovered ? 2.1 : 1.3);
+      fillPoly(polys.right, hovered ? 'rgba(249,115,22,0.24)' : 'rgba(37,99,235,0.14)', hovered ? 'rgba(249,115,22,0.72)' : 'rgba(37,99,235,0.30)', hovered ? 2.1 : 1.3);
+      fillPoly(polys.top, hovered ? 'rgba(249,115,22,0.30)' : 'rgba(37,99,235,0.18)', hovered ? 'rgba(249,115,22,0.90)' : 'rgba(37,99,235,0.45)', hovered ? 2.4 : 1.6);
+      state.addTargets.push({ poly: polys.top, target, face: 'top', polys });
+    }
+
+    function getAttachmentTargetsForCube(cube) {
+      const { x, y, z, h } = cube;
+      const targets = [{ kind: 'top', x, y, h: h + 1, label: `Add on top of this stack (new height ${h + 1})` }];
+      if (z === h - 1) {
+        const neighbours = [
+          { kind: 'left', x: x - 1, y, label: 'Add a grounded cube on the left-facing side' },
+          { kind: 'right', x, y: y - 1, label: 'Add a grounded cube on the right-facing side' },
+          { kind: 'front', x, y: y + 1, label: 'Add a grounded cube in front' },
+          { kind: 'side', x: x + 1, y, label: 'Add a grounded cube on the far side' }
+        ];
+        for (const n of neighbours) {
+          if (getHeight(n.x, n.y) === 0) targets.push({ ...n, h: 1 });
+        }
+      }
+      return targets;
+    }
+
+    function describeTarget(item) {
+      if (!item) return 'Left click to add cubes, right click to remove cubes';
+      if (item.type === 'remove') return `Remove top cube from stack at (${item.x}, ${item.y})`;
+      return `${item.target.label} — target (${item.target.x}, ${item.target.y})`;
+    }
+
+    function shortLabel(item) {
+      if (!item) return '';
+      if (item.type === 'remove') return 'Remove top cube';
+      if (item.target?.kind === 'top') return 'Add on top';
+      if (item.target?.kind === 'left') return 'Add on left side';
+      if (item.target?.kind === 'right') return 'Add on right side';
+      if (item.target?.kind === 'front') return 'Add in front';
+      if (item.target?.kind === 'side') return 'Add on far side';
+      return 'Cube target';
+    }
+
+    function updateCursorLabel(event) {
+      if (!state.hoveredTarget) {
+        cursorLabel.style.display = 'none';
+        return;
+      }
+      cursorLabel.textContent = shortLabel(state.hoveredTarget);
+      cursorLabel.style.left = `${event.clientX}px`;
+      cursorLabel.style.top = `${event.clientY}px`;
+      cursorLabel.style.display = 'block';
+    }
+
+    function drawHoveredOutline() {
+      if (!state.hoveredTarget) return;
+      if (state.hoveredTarget.polys) {
+        const face = state.hoveredTarget.face || 'top';
+        if (state.hoveredTarget.polys[face]) strokePoly(state.hoveredTarget.polys[face], '#c2410c', 3.5);
+      } else if (state.hoveredTarget.poly) {
+        strokePoly(state.hoveredTarget.poly, '#ea580c', 3);
+      }
+    }
+
+    function getHoverTargetAtPoint(pt) {
+      for (let i = state.addTargets.length - 1; i >= 0; i--) {
+        const item = state.addTargets[i];
+        if (pointInPolygon(pt.x, pt.y, item.poly)) return { ...item, type: 'add' };
+      }
+      for (let i = state.faceTargets.length - 1; i >= 0; i--) {
+        const item = state.faceTargets[i];
+        if (pointInPolygon(pt.x, pt.y, item.poly)) return { ...item, type: 'add' };
+      }
+      for (let i = state.removeTargets.length - 1; i >= 0; i--) {
+        const item = state.removeTargets[i];
+        if (pointInPolygon(pt.x, pt.y, item.poly)) return { ...item, type: 'remove' };
+      }
+      return null;
+    }
+
+    function render(options = {}) {
+      const showGuides = options.showGuides ?? state.showGuides;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      state.addTargets = [];
+      state.removeTargets = [];
+      state.faceTargets = [];
+
+      const params = computeRenderParams(canvas.width, canvas.height);
+      const { scale, ox, oy } = params;
+
+      if (state.showDots) {
+        drawProjectedDots(ctx, canvas.width, canvas.height, params);
+      }
+      if (state.showWalls) {
+        drawWallGuides(ctx, canvas.width, canvas.height, params);
+        drawDirectionLabels(ctx, canvas.width, canvas.height, params);
+      }
+
+      const drawList = [];
+      for (const [k, h] of state.heights.entries()) {
+        const { x, y } = parseColumnKey(k);
+        for (let z = 0; z < h; z++) drawList.push({ x, y, z, h });
+      }
+
+      drawList.sort((a, b) => {
+        const da = a.x + a.y + a.z;
+        const db = b.x + b.y + b.z;
+        if (da !== db) return da - db;
+        if (a.z !== b.z) return a.z - b.z;
+        return a.x - b.x;
+      });
+
+      if (showGuides) {
+        for (const cube of drawList) {
+          if (cube.z !== cube.h - 1) continue;
+          const attachments = getAttachmentTargetsForCube(cube);
+          for (const att of attachments) {
+            if (att.kind === 'top') {
+              drawGhostTarget(att, scale, ox, oy);
+            } else if (att.kind === 'left') {
+              const gp = getCubePolygons(att.x, att.y, 0, scale, ox, oy);
+              const hovered = state.hoveredTarget && state.hoveredTarget.target && sameTarget(state.hoveredTarget.target, att);
+              fillPoly(gp.top, hovered ? 'rgba(245,158,11,0.30)' : 'rgba(245,158,11,0.18)', hovered ? 'rgba(217,119,6,0.95)' : 'rgba(217,119,6,0.55)', hovered ? 2.4 : 1.6);
+              state.faceTargets.push({ poly: gp.top, target: att, face: 'top', polys: gp });
+            } else if (att.kind === 'right') {
+              const gp = getCubePolygons(att.x, att.y, 0, scale, ox, oy);
+              const hovered = state.hoveredTarget && state.hoveredTarget.target && sameTarget(state.hoveredTarget.target, att);
+              fillPoly(gp.top, hovered ? 'rgba(168,85,247,0.30)' : 'rgba(168,85,247,0.18)', hovered ? 'rgba(126,34,206,0.95)' : 'rgba(126,34,206,0.55)', hovered ? 2.4 : 1.6);
+              state.faceTargets.push({ poly: gp.top, target: att, face: 'top', polys: gp });
+            } else if (att.kind === 'front') {
+              const gp = getCubePolygons(att.x, att.y, 0, scale, ox, oy);
+              const hovered = state.hoveredTarget && state.hoveredTarget.target && sameTarget(state.hoveredTarget.target, att);
+              fillPoly(gp.top, hovered ? 'rgba(14,165,233,0.30)' : 'rgba(14,165,233,0.18)', hovered ? 'rgba(2,132,199,0.95)' : 'rgba(2,132,199,0.55)', hovered ? 2.4 : 1.6);
+              state.faceTargets.push({ poly: gp.top, target: att, face: 'top', polys: gp });
+            } else if (att.kind === 'side') {
+              const gp = getCubePolygons(att.x, att.y, 0, scale, ox, oy);
+              const hovered = state.hoveredTarget && state.hoveredTarget.target && sameTarget(state.hoveredTarget.target, att);
+              fillPoly(gp.top, hovered ? 'rgba(34,197,94,0.30)' : 'rgba(34,197,94,0.18)', hovered ? 'rgba(22,163,74,0.95)' : 'rgba(22,163,74,0.55)', hovered ? 2.4 : 1.6);
+              state.faceTargets.push({ poly: gp.top, target: att, face: 'top', polys: gp });
+            }
+          }
+        }
+      }
+
+      const faceTop = getComputedStyle(document.documentElement).getPropertyValue('--face-top').trim();
+      const faceLeft = getComputedStyle(document.documentElement).getPropertyValue('--face-left').trim();
+      const faceRight = getComputedStyle(document.documentElement).getPropertyValue('--face-right').trim();
+
+      for (const cube of drawList) {
+        const polys = getCubePolygons(cube.x, cube.y, cube.z, scale, ox, oy);
+        fillPoly(polys.left, faceLeft);
+        fillPoly(polys.right, faceRight);
+        fillPoly(polys.top, faceTop);
+        if (cube.z === cube.h - 1) {
+          state.removeTargets.push({ poly: polys.top, x: cube.x, y: cube.y, h: cube.h, face: 'top', polys });
+        }
+      }
+
+      drawHoveredOutline();
+      hoverHint.textContent = describeTarget(state.hoveredTarget);
+      refreshToggleLabels();
+      updateStats();
+    }
+
+    function computePlanData() {
+      const entries = Array.from(state.heights.entries()).map(([k, h]) => ({ ...parseColumnKey(k), h }));
+      if (!entries.length) {
+        return {
+          width: 1,
+          depth: 1,
+          maxH: 0,
+          topGridStandard: [[0]],
+          topGridSwapped: [[0]],
+          frontGrid: [[0]],
+          sideGrid: [[0]]
+        };
+      }
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, maxH = 0;
+      for (const e of entries) {
+        minX = Math.min(minX, e.x); maxX = Math.max(maxX, e.x);
+        minY = Math.min(minY, e.y); maxY = Math.max(maxY, e.y);
+        maxH = Math.max(maxH, e.h);
+      }
+      const width = maxX - minX + 1;
+      const depth = maxY - minY + 1;
+      // Keep the edge nearest the selected FRONT viewpoint at the bottom of
+      // the Top View. Standard FRONT is on the +y side; swapped FRONT is on
+      // the +x side, which requires a clockwise quarter-turn of the plan.
+      const topGridStandard = Array.from({ length: depth }, () => Array(width).fill(0));
+      const topGridSwapped = Array.from({ length: width }, () => Array(depth).fill(0));
+      for (const e of entries) {
+        topGridStandard[e.y - minY][e.x - minX] = 1;
+        topGridSwapped[e.x - minX][maxY - e.y] = 1;
+      }
+      const frontGrid = Array.from({ length: maxH || 1 }, () => Array(width).fill(0));
+      for (let x = minX; x <= maxX; x++) {
+        let colH = 0;
+        for (let y = minY; y <= maxY; y++) colH = Math.max(colH, getHeight(x, y));
+        for (let z = 0; z < colH; z++) frontGrid[maxH - 1 - z][x - minX] = 1;
+      }
+      const sideGrid = Array.from({ length: maxH || 1 }, () => Array(depth).fill(0));
+      for (let y = minY; y <= maxY; y++) {
+        let colH = 0;
+        for (let x = minX; x <= maxX; x++) colH = Math.max(colH, getHeight(x, y));
+        for (let z = 0; z < colH; z++) sideGrid[maxH - 1 - z][maxY - y] = 1;
+      }
+      return { width, depth, maxH, topGridStandard, topGridSwapped, frontGrid, sideGrid };
+    }
+
+    function drawOrthographicView(ctx2, grid, title, x, y, w, h) {
+      ctx2.save();
+      ctx2.fillStyle = 'white';
+      ctx2.fillRect(x, y, w, h);
+      ctx2.strokeStyle = '#111827';
+      ctx2.lineWidth = 1.5;
+      ctx2.strokeRect(x, y, w, h);
+      ctx2.fillStyle = '#111827';
+      ctx2.font = 'bold 22px Arial';
+      ctx2.fillText(title, x + 16, y + 30);
+
+      const rows = grid.length;
+      const cols = grid[0].length;
+      const padTop = 48;
+      const pad = 16;
+      const cell = Math.floor(Math.min((w - 2 * pad) / Math.max(cols, 1), (h - padTop - pad) / Math.max(rows, 1)));
+      const gridW = cols * cell;
+      const gridH = rows * cell;
+      const ox = x + (w - gridW) / 2;
+      const oy = y + padTop + (h - padTop - gridH) / 2;
+
+      drawViewGrid(ctx2, cols, rows, cell, ox, oy);
+      ctx2.fillStyle = '#ffffff';
+      ctx2.strokeStyle = '#111827';
+      ctx2.lineWidth = 2;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (grid[r][c]) {
+            ctx2.fillRect(ox + c * cell, oy + r * cell, cell, cell);
+            ctx2.strokeRect(ox + c * cell, oy + r * cell, cell, cell);
+          }
+        }
+      }
+      ctx2.restore();
+    }
+
+    function buildIsometricExportCanvas(targetCanvas = null) {
+      const out = targetCanvas || document.createElement('canvas');
+      out.width = canvas.width;
+      out.height = canvas.height;
+      const ctx2 = out.getContext('2d');
+      ctx2.clearRect(0, 0, out.width, out.height);
+      ctx2.fillStyle = '#ffffff';
+      ctx2.fillRect(0, 0, out.width, out.height);
+
+      const params = computeRenderParams(out.width, out.height);
+      const { scale, ox, oy } = params;
+      if (state.exportDots) {
+        drawProjectedDots(ctx2, out.width, out.height, params);
+      }
+      if (state.exportWalls) {
+        drawWallGuides(ctx2, out.width, out.height, params);
+      }
+      if (state.exportDirectionLabels) {
+        drawDirectionLabels(ctx2, out.width, out.height, params);
+      }
+
+      const drawList = [];
+      for (const [k, h] of state.heights.entries()) {
+        const { x, y } = parseColumnKey(k);
+        for (let z = 0; z < h; z++) drawList.push({ x, y, z, h });
+      }
+      drawList.sort((a, b) => {
+        const da = a.x + a.y + a.z;
+        const db = b.x + b.y + b.z;
+        if (da !== db) return da - db;
+        if (a.z !== b.z) return a.z - b.z;
+        return a.x - b.x;
+      });
+
+      const faceTop = getComputedStyle(document.documentElement).getPropertyValue('--face-top').trim();
+      const faceLeft = getComputedStyle(document.documentElement).getPropertyValue('--face-left').trim();
+      const faceRight = getComputedStyle(document.documentElement).getPropertyValue('--face-right').trim();
+      for (const cube of drawList) {
+        const polys = getCubePolygons(cube.x, cube.y, cube.z, scale, ox, oy);
+        fillPoly(polys.left, faceLeft, '#111827', 2, ctx2);
+        fillPoly(polys.right, faceRight, '#111827', 2, ctx2);
+        fillPoly(polys.top, faceTop, '#111827', 2, ctx2);
+      }
+      return out;
+    }
+
+    function buildViewsExportCanvas(targetCanvas = null) {
+      const data = computePlanData();
+      const mapping = getFrontSideMapping();
+      const out = targetCanvas || document.createElement('canvas');
+      out.width = 1400;
+      out.height = 520;
+      const ctx2 = out.getContext('2d');
+      ctx2.clearRect(0, 0, out.width, out.height);
+      ctx2.fillStyle = '#ffffff';
+      ctx2.fillRect(0, 0, out.width, out.height);
+      drawOrthographicView(ctx2, data[mapping.topGrid], 'Top View', 20, 20, 420, 480);
+      drawOrthographicView(ctx2, data[mapping.frontGrid], 'Front View', 490, 20, 420, 480);
+      drawOrthographicView(ctx2, data[mapping.sideGrid], 'Side View', 960, 20, 420, 480);
+      return out;
+    }
+
+    function downloadCanvas(canvasToDownload, filename) {
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = canvasToDownload.toDataURL('image/png');
+      link.click();
+    }
+
+    function exportIsometricPng() {
+      const out = buildIsometricExportCanvas();
+      const name = state.exportDots ? 'cube-solid-isometric-dotted.png' : 'cube-solid-isometric.png';
+      downloadCanvas(out, name);
+    }
+
+    function exportViewsPng() {
+      const out = buildViewsExportCanvas();
+      downloadCanvas(out, 'cube-solid-views.png');
+    }
+
+    function openExportPreview() {
+      buildIsometricExportCanvas(isoPreviewCanvas);
+      buildViewsExportCanvas(viewsPreviewCanvas);
+      previewOverlay.classList.add('open');
+      previewOverlay.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeExportPreview() {
+      previewOverlay.classList.remove('open');
+      previewOverlay.setAttribute('aria-hidden', 'true');
+    }
+
+    function refreshToggleLabels() {
+      toggleWallsBtn.textContent = state.showWalls ? 'Hide Walls' : 'Show Walls';
+      toggleDotsBtn.textContent = state.showDots ? 'Hide Dotted Grid' : 'Show Dotted Grid';
+      toggleGuidesBtn.textContent = state.showGuides ? 'Hide Guides' : 'Show Guides';
+      toggleFrontSideBtn.textContent = `Front/Side Mapping: ${state.swapFrontSide ? 'Swapped' : 'Standard'}`;
+      toggleExportDotsBtn.textContent = `Export Dots: ${state.exportDots ? 'On' : 'Off'}`;
+      toggleExportWallsBtn.textContent = `Export Walls: ${state.exportWalls ? 'On' : 'Off'}`;
+      toggleExportDirectionLabelsBtn.textContent = `Export Front/Side Labels: ${state.exportDirectionLabels ? 'On' : 'Off'}`;
+    }
+
+    function updateStats() {
+      const entries = Array.from(state.heights.values());
+      const cubes = totalCubes();
+      statCubes.textContent = cubes;
+      statColumns.textContent = state.heights.size;
+      statHeight.textContent = entries.length ? Math.max(...entries) : 0;
+      statFootprint.textContent = state.heights.size;
+      shapeTag.textContent = cubes ? `${cubes} cubes` : 'Empty';
+    }
+
+    function randomise() {
+      const n = Math.max(1, Math.min(60, parseInt(cubeCountInput.value || '8', 10)));
+      cubeCountInput.value = n;
+      const spread = parseInt(spreadInput.value, 10);
+      const solid = generateVisibleSolid(n, spread);
+      state.heights = new Map(solid.heights);
+      render();
+    }
+
+    function clearAll() {
+      state.heights = new Map();
+      render();
+    }
+
+    
+
+    function getCanvasPoint(event) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      return {
+        x: (event.clientX - rect.left) * scaleX,
+        y: (event.clientY - rect.top) * scaleY
+      };
+    }
+
+    function updateHoverFromEvent(event) {
+      const pt = getCanvasPoint(event);
+      const nextHover = getHoverTargetAtPoint(pt);
+      const keyOf = (obj) => obj ? JSON.stringify({
+        type: obj.type,
+        face: obj.face,
+        x: obj.x ?? obj.target?.x,
+        y: obj.y ?? obj.target?.y,
+        h: obj.h ?? obj.target?.h,
+        kind: obj.target?.kind
+      }) : 'null';
+      if (keyOf(nextHover) !== keyOf(state.hoveredTarget)) {
+        state.hoveredTarget = nextHover;
+        render();
+      }
+      updateCursorLabel(event);
+    }
+
+    canvas.addEventListener('contextmenu', (event) => event.preventDefault());
+    canvas.addEventListener('mousemove', updateHoverFromEvent);
+    canvas.addEventListener('mouseleave', () => {
+      state.hoveredTarget = null;
+      cursorLabel.style.display = 'none';
+      render();
+    });
+
+    canvas.addEventListener('mousedown', (event) => {
+      const pt = getCanvasPoint(event);
+
+      if (event.button === 0) {
+        for (let i = state.addTargets.length - 1; i >= 0; i--) {
+          const item = state.addTargets[i];
+          if (pointInPolygon(pt.x, pt.y, item.poly)) {
+            setHeight(item.target.x, item.target.y, item.target.h);
+            render();
+            return;
+          }
+        }
+        for (let i = state.faceTargets.length - 1; i >= 0; i--) {
+          const item = state.faceTargets[i];
+          if (pointInPolygon(pt.x, pt.y, item.poly)) {
+            setHeight(item.target.x, item.target.y, item.target.h);
+            render();
+            return;
+          }
+        }
+      }
+
+      if (event.button === 2) {
+        for (let i = state.removeTargets.length - 1; i >= 0; i--) {
+          const item = state.removeTargets[i];
+          if (pointInPolygon(pt.x, pt.y, item.poly)) {
+            setHeight(item.x, item.y, item.h - 1);
+            render();
+            return;
+          }
+        }
+      }
+    });
+
+    generateBtn.addEventListener('click', randomise);
+    resetBtn.addEventListener('click', clearAll);
+    toggleWallsBtn.addEventListener('click', () => {
+      state.showWalls = !state.showWalls;
+      render();
+    });
+    cubeCountInput.addEventListener('change', randomise);
+    spreadInput.addEventListener('input', randomise);
+    previewExportsBtn.addEventListener('click', openExportPreview);
+    downloadIsoFromPreviewBtn.addEventListener('click', exportIsometricPng);
+    downloadViewsFromPreviewBtn.addEventListener('click', exportViewsPng);
+    closePreviewBtn.addEventListener('click', closeExportPreview);
+    previewOverlay.addEventListener('click', (event) => {
+      if (event.target === previewOverlay) closeExportPreview();
+    });
+
+    toggleGuidesBtn.addEventListener('click', () => {
+      state.showGuides = !state.showGuides;
+      render();
+    });
+
+    toggleFrontSideBtn.addEventListener('click', () => {
+      state.swapFrontSide = !state.swapFrontSide;
+      refreshToggleLabels();
+      render();
+      if (previewOverlay.classList.contains('open')) openExportPreview();
+    });
+
+    toggleDotsBtn.addEventListener('click', () => {
+      state.showDots = !state.showDots;
+      render();
+    });
+
+    toggleExportDotsBtn.addEventListener('click', () => {
+      state.exportDots = !state.exportDots;
+      refreshToggleLabels();
+      if (previewOverlay.classList.contains('open')) openExportPreview();
+    });
+
+    toggleExportWallsBtn.addEventListener('click', () => {
+      state.exportWalls = !state.exportWalls;
+      refreshToggleLabels();
+      if (previewOverlay.classList.contains('open')) openExportPreview();
+    });
+
+    toggleExportDirectionLabelsBtn.addEventListener('click', () => {
+      state.exportDirectionLabels = !state.exportDirectionLabels;
+      refreshToggleLabels();
+      if (previewOverlay.classList.contains('open')) openExportPreview();
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && previewOverlay.classList.contains('open')) {
+        closeExportPreview();
+      }
+    });
+
+    refreshToggleLabels();
+    randomise();
+  </script>
+</body>
+</html>
