@@ -2,8 +2,8 @@
  * @jest-environment jsdom
  *
  * Tests for isometric-cube-generator.html (v2) UI logic.
- * Covers: toggle front/side mapping, preview overlay, WYSIWYG export
- * (display toggles control export), and button label refreshes.
+ * Covers: toggle front/side mapping, preview overlay, independent export
+ * settings, rotated top view mapping, and button label refreshes.
  * Canvas rendering is mocked — we test state and DOM mutations only.
  */
 const { loadCircuitScript } = require('./helpers')
@@ -54,6 +54,9 @@ beforeAll(() => {
     <button id="toggleFrontSideBtn">Front/Side Mapping: Standard</button>
     <button id="toggleWallsBtn">Hide Walls</button>
     <button id="toggleDotsBtn">Hide Dotted Grid</button>
+    <button id="toggleExportDotsBtn">Export Dots: On</button>
+    <button id="toggleExportWallsBtn">Export Walls: On</button>
+    <button id="toggleExportDirectionLabelsBtn">Export Front/Side Labels: On</button>
     <button id="downloadIsoFromPreviewBtn">Download Iso PNG</button>
     <button id="downloadViewsFromPreviewBtn">Download Views PNG</button>
 
@@ -69,8 +72,10 @@ beforeAll(() => {
   `
 })
 
-let state, toggleFrontSideBtn, toggleWallsBtn, toggleDotsBtn, previewOverlay,
-  previewExportsBtn, closePreviewBtn
+let state, toggleFrontSideBtn, toggleWallsBtn, toggleDotsBtn,
+  toggleExportDotsBtn, toggleExportWallsBtn, toggleExportDirectionLabelsBtn,
+  previewOverlay, previewExportsBtn, closePreviewBtn, getFrontSideMapping,
+  computePlanData
 
 beforeAll(() => {
   ;({
@@ -78,17 +83,27 @@ beforeAll(() => {
     toggleFrontSideBtn,
     toggleWallsBtn,
     toggleDotsBtn,
+    toggleExportDotsBtn,
+    toggleExportWallsBtn,
+    toggleExportDirectionLabelsBtn,
     previewOverlay,
     previewExportsBtn,
     closePreviewBtn,
+    getFrontSideMapping,
+    computePlanData,
   } = loadCircuitScript('isometric-cube-generator.html', [
     'state',
     'toggleFrontSideBtn',
     'toggleWallsBtn',
     'toggleDotsBtn',
+    'toggleExportDotsBtn',
+    'toggleExportWallsBtn',
+    'toggleExportDirectionLabelsBtn',
     'previewOverlay',
     'previewExportsBtn',
     'closePreviewBtn',
+    'getFrontSideMapping',
+    'computePlanData',
   ]))
 })
 
@@ -105,10 +120,10 @@ describe('initial state', () => {
     expect(state.showWalls).toBe(true)
   })
 
-  test('no separate export state properties exist', () => {
-    expect(state.exportDots).toBeUndefined()
-    expect(state.exportWalls).toBeUndefined()
-    expect(state.exportDirectionLabels).toBeUndefined()
+  test('export settings default to visible with direction labels', () => {
+    expect(state.exportDots).toBe(true)
+    expect(state.exportWalls).toBe(true)
+    expect(state.exportDirectionLabels).toBe(true)
   })
 
   test('preview overlay is closed initially', () => {
@@ -125,12 +140,26 @@ describe('toggle front/side mapping', () => {
 
   test('button label updates to Swapped', () => {
     expect(toggleFrontSideBtn.textContent).toBe('Front/Side Mapping: Swapped')
+    expect(getFrontSideMapping().topGrid).toBe('topGridSwapped')
   })
 
   test('clicking again flips swapFrontSide back to false', () => {
     toggleFrontSideBtn.click()
     expect(state.swapFrontSide).toBe(false)
     expect(toggleFrontSideBtn.textContent).toBe('Front/Side Mapping: Standard')
+    expect(getFrontSideMapping().topGrid).toBe('topGridStandard')
+  })
+})
+
+describe('top view orientation', () => {
+  test('uses a different top grid when Front and Side are swapped', () => {
+    state.heights = new Map([
+      ['0,0', 1],
+      ['1,0', 1],
+      ['0,1', 1],
+    ])
+    const data = computePlanData()
+    expect(data.topGridStandard).not.toEqual(data.topGridSwapped)
   })
 })
 
@@ -155,7 +184,7 @@ describe('preview overlay', () => {
   })
 })
 
-describe('WYSIWYG display toggles', () => {
+describe('display toggles', () => {
   test('toggleDotsBtn flips showDots', () => {
     const before = state.showDots
     toggleDotsBtn.click()
@@ -182,5 +211,32 @@ describe('WYSIWYG display toggles', () => {
     toggleWallsBtn.click()
     expect(toggleWallsBtn.textContent).toBe(state.showWalls ? 'Hide Walls' : 'Show Walls')
     toggleWallsBtn.click() // restore
+  })
+})
+
+describe('independent export settings', () => {
+  test('export dots can change without changing canvas dots', () => {
+    const displayed = state.showDots
+    toggleExportDotsBtn.click()
+    expect(state.exportDots).toBe(false)
+    expect(state.showDots).toBe(displayed)
+    expect(toggleExportDotsBtn.textContent).toBe('Export Dots: Off')
+    toggleExportDotsBtn.click()
+  })
+
+  test('export walls can change without changing canvas walls', () => {
+    const displayed = state.showWalls
+    toggleExportWallsBtn.click()
+    expect(state.exportWalls).toBe(false)
+    expect(state.showWalls).toBe(displayed)
+    expect(toggleExportWallsBtn.textContent).toBe('Export Walls: Off')
+    toggleExportWallsBtn.click()
+  })
+
+  test('direction labels can be excluded from exports', () => {
+    toggleExportDirectionLabelsBtn.click()
+    expect(state.exportDirectionLabels).toBe(false)
+    expect(toggleExportDirectionLabelsBtn.textContent).toBe('Export Front/Side Labels: Off')
+    toggleExportDirectionLabelsBtn.click()
   })
 })

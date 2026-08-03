@@ -279,7 +279,7 @@
         <input id="batteryCells" type="number" min="1" max="8" value="2" />
       </div>
       <hr style="border: 0; border-top: 1px solid var(--border); margin: 8px 0;" />
-      
+
       <div class="field">
         <label for="magnetBlocks">Solenoid length (Even grids)</label>
         <input id="magnetBlocks" type="number" min="2" max="16" step="2" value="4" />
@@ -332,11 +332,11 @@
       <button id="zoomInBtn" title="Zoom in">+</button>
       <button id="fitBtn">Centre View</button>
     </div>
-    
+
     <svg id="app" xmlns="http://www.w3.org/2000/svg"></svg>
-    
+
     <textarea id="inlineEditor" class="text-editor" placeholder="Type here..."></textarea>
-    
+
     <div id="navigator" class="navigator-panel">
       <svg id="minimap" xmlns="http://www.w3.org/2000/svg"></svg>
       <div id="minimap-viewport"></div>
@@ -402,7 +402,7 @@
     const HIT = 8;
     const WIRE_STROKE = 2.4;
     const COMPONENT_SCALE = 0.8;
-    
+
     const state = {
       tool: 'select',
       rotation: 0,
@@ -555,7 +555,7 @@
     ui.toolBtns.forEach(btn => btn.addEventListener('click', () => setTool(btn.dataset.tool)));
     ui.rotateBtn.addEventListener('click', () => applyRotation(90));
     ui.rotate180Btn.addEventListener('click', () => applyRotation(180));
-    
+
     ui.fontSize.addEventListener('input', () => {
       const comp = getSelectedComponent();
       if (comp?.type === 'textbox') {
@@ -598,7 +598,7 @@
       syncControls();
       render();
     });
-    
+
     ui.flipPolarityBtn.addEventListener('click', () => {
       const selectedComp = getSelectedComponent();
       if (selectedComp && ['dc-supply', 'ac-supply'].includes(selectedComp.type)) {
@@ -610,7 +610,7 @@
       state.polarityFlipped = !state.polarityFlipped;
       ui.flipPolarityBtn.classList.toggle('active', state.polarityFlipped);
     });
-    
+
     ui.undoBtn.addEventListener('click', undo);
     ui.redoBtn.addEventListener('click', redo);
     ui.clearBtn.addEventListener('click', () => {
@@ -621,7 +621,7 @@
       rebuildJunctions();
       render();
     });
-    
+
     ui.exportBtn.addEventListener('click', exportPNG);
     ui.fitBtn.addEventListener('click', centreView);
     ui.zoomInBtn.addEventListener('click', () => adjustZoom(1.2));
@@ -1127,14 +1127,16 @@
             mode: 'move-arrow',
             id: comp.id,
             lastX: p.x,
-            lastY: p.y
+            lastY: p.y,
+            moved: false
           };
         } else {
           state.dragging = {
             mode: 'move-component',
             id: comp.id,
             offsetX: comp.x - (comp.type === 'textbox' ? p.x : snapped.x),
-            offsetY: comp.y - (comp.type === 'textbox' ? p.y : snapped.y)
+            offsetY: comp.y - (comp.type === 'textbox' ? p.y : snapped.y),
+            moved: false
           };
         }
       }
@@ -1168,6 +1170,7 @@
       if (state.dragging.mode === 'move-component') {
         const comp = state.components.find(c => c.id === state.dragging.id);
         if (!comp) return;
+        if (!state.dragging.moved) { saveHistory(); state.dragging.moved = true; }
         if (comp.type === 'textbox') {
           comp.x = p.x + state.dragging.offsetX;
           comp.y = p.y + state.dragging.offsetY;
@@ -1182,6 +1185,7 @@
       if (state.dragging.mode === 'move-arrow') {
         const comp = state.components.find(c => c.id === state.dragging.id);
         if (!comp) return;
+        if (!state.dragging.moved) { saveHistory(); state.dragging.moved = true; }
         let dx = p.x - state.dragging.lastX;
         let dy = p.y - state.dragging.lastY;
         if (comp.type === 'divider-arrow') {
@@ -1226,9 +1230,6 @@
       }
       if (state.dragging.mode === 'move-component' || state.dragging.mode === 'move-arrow') {
         if (state.dragging.mode === 'move-component') rebuildJunctions();
-        saveHistory();
-        const snapshot = state.history.pop();
-        state.history.push(snapshot);
       }
       state.dragging = null;
       render();
@@ -1241,7 +1242,7 @@
         render();
       }
     });
-    
+
     // --- NAVIGATOR EVENTS ---
     const navPanel = document.getElementById('navigator');
     let isDraggingMinimap = false;
@@ -1340,16 +1341,16 @@
       const nav = document.getElementById('navigator');
       const minimap = document.getElementById('minimap');
       const navViewport = document.getElementById('minimap-viewport');
-      
+
       if (!nav || !minimap || !navViewport) return;
 
       minimap.setAttribute('viewBox', `0 0 ${state.world.width} ${state.world.height}`);
-      minimap.innerHTML = svg.innerHTML; 
-      
+      minimap.innerHTML = svg.innerHTML;
+
       [...minimap.querySelectorAll('line[stroke="#f0f0f0"]')].forEach(el => el.remove());
 
       const view = state.view || { x: 0, y: 0, width: state.viewport.width, height: state.viewport.height };
-      
+
       const leftPct = (view.x / state.world.width) * 100;
       const topPct = (view.y / state.world.height) * 100;
       const widthPct = (view.width / state.world.width) * 100;
@@ -1370,7 +1371,7 @@
       svg.innerHTML = '';
 
       const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-      
+
       // Definition for our new resistor fill patterns
       defs.innerHTML = `
         <pattern id="pat-dotted" x="0" y="0" width="4" height="4" patternUnits="userSpaceOnUse">
@@ -1394,7 +1395,7 @@
       drawWirePreview();
       drawComponents();
       drawJunctions();
-      
+
       // Call updateNavigator at end of render loop
       updateNavigator();
     }
@@ -1478,20 +1479,20 @@
           ? make('g', { transform: 'scale(-1 1)' })
           : scaled;
         if (inner !== scaled) scaled.appendChild(inner);
-        
+
         if (comp.type === 'bulb') drawBulb(inner);
         if (comp.type === 'battery') drawBattery(inner, comp.cells || 2);
         if (comp.type === 'dc-supply') drawDcSupply(inner);
         if (comp.type === 'power-supply') drawPowerSupply(inner);
         if (comp.type === 'ac-supply') drawAcSupply(inner);
         if (comp.type === 'capacitor') drawCapacitor(inner);
-        
+
         // Push the fill pattern to the resistor components
         if (comp.type === 'resistor') drawResistor(inner, comp.fillPattern);
         if (comp.type === 'variable-resistor') drawVariableResistor(inner, comp.fillPattern);
         if (comp.type === 'potentiometer') drawPotentiometer(inner, comp.fillPattern);
         if (comp.type === 'thermistor') drawThermistor(inner, comp.fillPattern);
-        
+
         if (comp.type === 'bell') drawBell(inner);
         if (comp.type === 'ldr') drawLdr(inner);
         if (comp.type === 'heater') drawHeater(inner);
@@ -1679,7 +1680,7 @@
     function drawResistor(g, fillPattern = 'white') {
       g.appendChild(make('line', { x1: -42, y1: 0, x2: -22, y2: 0, stroke: '#111827', 'stroke-width': 2.4 }));
       g.appendChild(make('line', { x1: 22, y1: 0, x2: 42, y2: 0, stroke: '#111827', 'stroke-width': 2.4 }));
-      
+
       // 1. Solid white background to hide wires underneath
       g.appendChild(make('rect', { x: -22, y: -10, width: 44, height: 20, fill: 'white', stroke: 'none' }));
 
@@ -1777,14 +1778,14 @@
       const y_top = -14 * blocks;
       const dy = (y_bottom - y_top) / coils;
 
-      g.appendChild(make('rect', { 
-        x: -14, 
-        y: y_top - 10, 
-        width: 28, 
-        height: (y_bottom - y_top) + 20, 
-        fill: 'white', 
-        stroke: '#111827', 
-        'stroke-width': 2.4 
+      g.appendChild(make('rect', {
+        x: -14,
+        y: y_top - 10,
+        width: 28,
+        height: (y_bottom - y_top) + 20,
+        fill: 'white',
+        stroke: '#111827',
+        'stroke-width': 2.4
       }));
 
       // X offsets: -28 * 0.8 = -22.4 (exact horizontal grid lock)

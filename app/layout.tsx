@@ -1,7 +1,10 @@
 import type { Metadata } from 'next'
+import { GoogleAnalytics } from '@next/third-parties/google'
+import { parseGoogleAnalyticsId } from '@/lib/analytics'
 import './globals.css'
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://diagrams.string.sg'),
   title: 'Diagram Tools',
   description: 'Teaching tools for creating clean, exportable diagrams.',
   openGraph: {
@@ -25,25 +28,13 @@ export const metadata: Metadata = {
   },
 }
 
-const GA_ID = process.env.NEXT_PUBLIC_GA_ID
+const GA_ID = parseGoogleAnalyticsId(process.env.NEXT_PUBLIC_GA_ID)
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <head>
-        {GA_ID && GA_ID !== 'G-XXXXXXXXXX' && (
-          <>
-            <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} />
-            <script dangerouslySetInnerHTML={{ __html: `
-              window.dataLayer=window.dataLayer||[];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js',new Date());
-              gtag('config','${GA_ID}');
-            `}} />
-          </>
-        )}
-      </head>
       <body>{children}</body>
+      {GA_ID && <GoogleAnalytics gaId={GA_ID} />}
     </html>
   )
 }

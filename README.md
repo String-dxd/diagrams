@@ -52,18 +52,31 @@ Run `lib/schema.sql` once against your NeonDB instance.
 psql $DATABASE_URL -f lib/schema.sql
 ```
 
-## Deploying to Vercel
+## Event-driven production deployment
 
-1. Push this repo to GitHub
-2. Import the project in [vercel.com](https://vercel.com)
-3. Add environment variables in Vercel project settings:
-   - `DATABASE_URL` — from your Neon project dashboard
-   - `NEXT_PUBLIC_GA_ID` — your GA4 Measurement ID (format: `G-XXXXXXXXXX`)
-4. Deploy
+Production is deployed by `.github/workflows/julienne-deploy.yml`. There is no polling job or deployment cron: a push to `main` that changes a canonical tool or application/deployment file triggers the workflow.
+
+The workflow treats the highest-numbered matching source file at the repository root as Julienne's source of truth:
+
+| Canonical source pattern | Deployed file |
+|---|---|
+| `circuit_diagram_creatorv*.html` | `public/tools/circuit_diagram_creatorv3.html` |
+| `circuit diagram secjc v*.html` | `public/tools/circuit_diagram_secjcv2.html` |
+| `cube_solid_generator_refined_v*.html` | `public/tools/isometric-cube-generator.html` |
+
+It then adds the required metrics hooks, checks that the generated copies have no drift, runs Jest specifications, `npm audit`, Semgrep, CodeQL, and a production build. Vercel production deployment happens only after every gate passes. Vercel's direct Git deployment for `main` is disabled in `vercel.json` so an unchecked commit cannot race the workflow.
+
+Repository Actions secrets required by the deploy job are `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, and `VERCEL_TOKEN`. Runtime variables such as `DATABASE_URL` and `NEXT_PUBLIC_GA_ID` remain in Vercel project settings.
+
+Run the same local contract (apart from hosted CodeQL/Semgrep) with:
+
+```bash
+npm run verify
+```
 
 ## Editing the HTML tools
 
-The diagram tools live in `public/tools/` as standalone HTML files. You can edit them directly — no React knowledge needed.
+For Julienne-managed tools, edit or add the highest-numbered canonical file at the repository root and run `npm run sync:tools`. Do not hand-edit its generated destination under `public/tools/`; the sync and deployment-contract tests will overwrite or reject drift. Other tools remain standalone files in `public/tools/`.
 
 Two things in each file must not be removed:
 
@@ -96,9 +109,9 @@ lib/
 public/
   tools/                            # HTML tool files (edit freely)
     circuit_pri_suitev2.html        # Pri circuit shell (symbol/object toggle)
-    circuit_diagram_creatorv2.html  # Pri symbol mode
-    object_circuitv2.html           # Pri object mode
-    circuit_diagram_secjc.html      # Sec/JC circuit tool
+    circuit_diagram_creatorv3.html  # Generated Pri symbol deployment copy
+    object_circuitv3.html           # Pri object mode
+    circuit_diagram_secjcv2.html    # Generated Sec/JC deployment copy
     water_tank_generator.html       # Water tank tool
     isometric-cube-generator.html   # Isometric cube tool
   tracker.js                        # Shared tracking script
@@ -107,7 +120,7 @@ public/
 
 ## Stack
 
-- [Next.js 14](https://nextjs.org) — framework
+- [Next.js 15.5](https://nextjs.org) — framework
 - [Vercel](https://vercel.com) — hosting
 - [NeonDB](https://neon.tech) — Postgres for metrics
 - [Tailwind CSS](https://tailwindcss.com) — styling

@@ -1,0 +1,136 @@
+name: Verify and deploy Julienne changes
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'circuit_diagram_creatorv*.html'
+      - 'circuit diagram secjc v*.html'
+      - 'cube_solid_generator_refined_v*.html'
+      - 'app/**'
+      - 'lib/**'
+      - 'public/**'
+      - 'scripts/**'
+      - '__tests__/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'next.config.mjs'
+      - 'vercel.json'
+      - '.semgrep.yml'
+      - '.github/workflows/julienne-deploy.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: diagrams-production
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+  security-events: write
+
+jobs:
+  verify:
+    name: Test, scan, and build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the source of truth
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Initialise CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+
+      - name: Install dependencies exactly
+        run: npm ci
+
+      - name: Promote Julienne's newest versioned tools
+        run: npm run sync:tools
+
+      - name: Verify deployed tool copies and tracking contract
+        run: npm run sync:check
+
+      - name: Run executable specifications
+        run: npm run test:ci
+
+      - name: Audit production and build dependencies
+        run: npm run security:audit
+
+      - name: Set up Python for Semgrep
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Install Semgrep
+        run: python -m pip install semgrep==1.170.0
+
+      - name: Run Semgrep SAST
+        run: >-
+          semgrep scan
+          --config .semgrep.yml
+          --config p/nodejs
+          --error
+          --severity ERROR
+          --exclude node_modules
+          --exclude .next
+          --exclude __tests__
+          --exclude _archive
+          .
+
+      - name: Build the production application
+        run: npm run build
+
+      - name: Analyse with CodeQL
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:javascript-typescript
+
+  deploy:
+    name: Deploy verified build to production
+    needs: verify
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - name: Check out the verified source
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies exactly
+        run: npm ci
+
+      - name: Promote Julienne's newest versioned tools
+        run: npm run sync:tools
+
+      - name: Install the Vercel CLI
+        run: npm install --global vercel@58.4.4
+
+      - name: Pull production configuration
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Build with Vercel
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+
+      - name: Deploy the verified prebuilt output
+        id: deploy
+        shell: bash
+        run: |
+          deployment_url="$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN")"
+          echo "url=$deployment_url" >> "$GITHUB_OUTPUT"
+          echo "### Production deployment" >> "$GITHUB_STEP_SUMMARY"
+          echo "$deployment_url" >> "$GITHUB_STEP_SUMMARY"

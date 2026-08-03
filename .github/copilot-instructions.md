@@ -2,21 +2,22 @@
 
 ## Project Overview
 
-Diagram tools for primary school educators — standalone HTML canvas tools served via a Next.js 14 (App Router) host on Vercel. No installation required for end users.
+Diagram tools for primary school educators — standalone HTML canvas tools served via a Next.js 15.5 (App Router) host on Vercel. No installation required for end users.
 
 ### Tools
 
 | Tool | Route | HTML file |
 |------|-------|-----------|
-| Circuit Symbol Diagram | `/tools/circuits` (symbol tab) | `public/tools/circuit_diagram_creator.html` |
-| Circuit Object Diagram | `/tools/circuits` (object tab) | `public/tools/object_circuit.html` |
+| Circuit Symbol Diagram | `/tools/circuits` (symbol tab) | `public/tools/circuit_diagram_creatorv3.html` |
+| Circuit Object Diagram | `/tools/circuits` (object tab) | `public/tools/object_circuitv3.html` |
+| Circuit Diagram (Sec/JC) | `/tools/circuits-secjc` | `public/tools/circuit_diagram_secjcv2.html` |
 | Isometric Cube Builder | `/tools/isometric-cube` | `public/tools/isometric-cube-generator.html` |
 
 ## Stack
 
 | Concern | Choice |
 |---------|--------|
-| Framework | Next.js 14 (App Router) |
+| Framework | Next.js 15.5 (App Router) |
 | Hosting | Vercel |
 | Database | NeonDB (Postgres) via `@neondatabase/serverless` |
 | Styling | Tailwind CSS |
@@ -46,6 +47,12 @@ _archive/                   # Retired files
 
 ## Key Conventions
 
+### Julienne's canonical HTML tool files
+
+For the primary symbol, Sec/JC, and isometric tools, the highest matching versioned root file is the source of truth. Run `npm run sync:tools` to generate the stable `public/tools/` destination. Never hand-edit the generated destination.
+
+Mappings are encoded in `scripts/sync-julienne-tools.js` and enforced by `__tests__/deployment-contract.test.js`.
+
 ### HTML Tool Files (`public/tools/`)
 
 Every HTML tool file **must** include both of the following — do not remove them:
@@ -58,7 +65,7 @@ Every HTML tool file **must** include both of the following — do not remove th
 <script src="/tracker.js"></script>
 ```
 
-Valid `tool-id` values: `circuit-symbol` | `circuit-object` | `isometric-cube`
+Valid `tool-id` values: `circuit-symbol` | `circuit-object` | `circuit-secjc` | `water-tank` | `isometric-cube`
 
 When adding a new tool, register a new unique `tool-id` value and update the API route's allowed list in `app/api/event/route.ts`.
 
@@ -102,6 +109,13 @@ Run all tests:
 npm test
 ```
 
+Run the local release gates:
+```bash
+npm run verify
+```
+
+Pushes to `main` that touch canonical tools or application/deployment files trigger `.github/workflows/julienne-deploy.yml`. The event-driven workflow runs drift checks, Jest, npm audit, Semgrep, CodeQL, and a production build before deploying through Vercel. There is no polling or deployment cron.
+
 ### Test Suites
 
 | Suite | File | What it covers |
@@ -116,4 +130,4 @@ When adding a new tool or API change, add corresponding tests following the patt
 
 Run `lib/schema.sql` once against your NeonDB instance before first use.
 
-Valid `tool` column values in the `events` table: `circuit-symbol` | `circuit-object` | `isometric-cube`
+Valid `tool` column values in the `events` table: `circuit-symbol` | `circuit-object` | `circuit-secjc` | `water-tank` | `isometric-cube`
