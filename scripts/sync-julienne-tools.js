@@ -22,6 +22,12 @@ const TOOL_CONTRACTS = [
     destination: 'public/tools/isometric-cube-generator.html',
     toolId: 'isometric-cube',
   },
+  {
+    name: 'Seed Dispersal Diagram',
+    sourcePattern: /^seed dispersal diagram v(\d+)\.html$/,
+    destination: 'public/tools/seed-dispersal-diagram.html',
+    toolId: 'seed-dispersal',
+  },
 ]
 
 function findHighestVersion(root, sourcePattern) {

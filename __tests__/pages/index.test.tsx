@@ -29,6 +29,11 @@ describe('Index page', () => {
     expect(screen.getByText('Isometric Cube Builder')).toBeInTheDocument()
   })
 
+  it('shows a card for Seed Dispersal Diagram', () => {
+    render(<Home />)
+    expect(screen.getByText('Seed Dispersal Diagram')).toBeInTheDocument()
+  })
+
   it('links Pri circuit card to /tools/circuits', () => {
     render(<Home />)
     const link = screen.getByRole('link', { name: /circuit diagrams \(pri\)/i })
@@ -51,6 +56,12 @@ describe('Index page', () => {
     render(<Home />)
     const link = screen.getByRole('link', { name: /isometric cube builder/i })
     expect(link).toHaveAttribute('href', '/tools/isometric-cube')
+  })
+
+  it('links seed dispersal card to /tools/seed-dispersal', () => {
+    render(<Home />)
+    const link = screen.getByRole('link', { name: /seed dispersal diagram/i })
+    expect(link).toHaveAttribute('href', '/tools/seed-dispersal')
   })
 
   it('shows the footer with creator credit', () => {

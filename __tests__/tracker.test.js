@@ -81,6 +81,30 @@ describe('Export button detection', () => {
 
     expect(global.fetch).toHaveBeenCalledTimes(1)
   })
+
+  it('fires fetch when #exportPractice is clicked', () => {
+    document.head.innerHTML = '<meta name="tool-id" content="seed-dispersal" />'
+    document.body.innerHTML = '<button id="exportPractice">Export Diagram as PNG</button>'
+    loadTracker()
+
+    document.getElementById('exportPractice').click()
+
+    expect(global.fetch).toHaveBeenCalledWith('/api/event', expect.objectContaining({
+      body: JSON.stringify({ uuid: 'mock-uuid-1234', tool: 'seed-dispersal' }),
+    }))
+  })
+
+  it('fires fetch when #exportCreator is clicked', () => {
+    document.head.innerHTML = '<meta name="tool-id" content="seed-dispersal" />'
+    document.body.innerHTML = '<button id="exportCreator">Export PNG</button>'
+    loadTracker()
+
+    document.getElementById('exportCreator').click()
+
+    expect(global.fetch).toHaveBeenCalledWith('/api/event', expect.objectContaining({
+      body: JSON.stringify({ uuid: 'mock-uuid-1234', tool: 'seed-dispersal' }),
+    }))
+  })
 })
 
 describe('No-op cases', () => {
