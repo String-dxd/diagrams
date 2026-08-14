@@ -10,7 +10,7 @@
   }
 
   // Attach to all known export buttons (each HTML file has a subset of these)
-  ;['exportBtn', 'downloadBtn', 'exportViewsBtn', 'downloadIsoFromPreviewBtn', 'downloadViewsFromPreviewBtn'].forEach(function (id) {
+  ;['exportBtn', 'downloadBtn', 'exportViewsBtn', 'downloadIsoFromPreviewBtn', 'downloadViewsFromPreviewBtn', 'exportPractice', 'exportCreator'].forEach(function (id) {
     var btn = document.getElementById(id)
     if (!btn) return
     btn.addEventListener('click', function () {

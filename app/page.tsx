@@ -25,6 +25,12 @@ const tools = [
     description: 'Build 3D cube structures and generate top, front, and side views.',
     badge: 'PSLE spatial',
   },
+  {
+    href: '/tools/seed-dispersal',
+    title: 'Seed Dispersal Diagram',
+    description: 'Create and export seed dispersal maps for primary science. Practice and creator modes.',
+    badge: 'Pri Sci',
+  },
 ]
 
 export default function Home() {

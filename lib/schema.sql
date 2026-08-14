@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS events (
   id         SERIAL PRIMARY KEY,
   user_uuid  TEXT NOT NULL REFERENCES users(uuid),
-  tool       TEXT NOT NULL, -- 'circuit-symbol' | 'circuit-object' | 'isometric-cube'
+  tool       TEXT NOT NULL, -- 'circuit-symbol' | 'circuit-object' | 'circuit-secjc' | 'water-tank' | 'isometric-cube' | 'seed-dispersal'
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

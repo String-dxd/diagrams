@@ -22,6 +22,7 @@ describe('Julienne source-of-truth deployment contract', () => {
       'circuit_diagram_creatorv4.html',
       'circuit diagram secjc v3.html',
       'cube_solid_generator_refined_v3.html',
+      'seed dispersal diagram v1.html',
     ])
   })
 

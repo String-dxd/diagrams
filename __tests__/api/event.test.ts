@@ -110,7 +110,7 @@ describe('POST /api/event', () => {
   })
 
   it('accepts all valid tool names', async () => {
-    const tools = ['circuit-symbol', 'circuit-object', 'circuit-secjc', 'water-tank', 'isometric-cube']
+    const tools = ['circuit-symbol', 'circuit-object', 'circuit-secjc', 'water-tank', 'isometric-cube', 'seed-dispersal']
     for (const tool of tools) {
       mockSql
         .mockResolvedValueOnce([])
