@@ -1,0 +1,122 @@
+name: Jules Push Monitor
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  # ── Detect whether any commit in this push is from JulesWyrm ──────────────
+  detect-jules:
+    runs-on: ubuntu-latest
+    outputs:
+      jules_pushed: ${{ steps.check.outputs.jules_pushed }}
+      commit_range: ${{ steps.check.outputs.commit_range }}
+    steps:
+      - name: Check commit authors
+        id: check
+        env:
+          COMMITS: ${{ toJson(github.event.commits) }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.event.after }}
+        run: |
+          JULES_FOUND=$(echo "$COMMITS" | python3 -c "
+          import json, sys
+          commits = json.load(sys.stdin)
+          found = any(c.get('author', {}).get('username') == 'JulesWyrm' for c in commits)
+          print('true' if found else 'false')
+          ")
+          echo "jules_pushed=$JULES_FOUND" >> "$GITHUB_OUTPUT"
+          echo "commit_range=${BEFORE}..${AFTER}" >> "$GITHUB_OUTPUT"
+
+  # ── Notify via Beeper ─────────────────────────────────────────────────────
+  notify:
+    needs: detect-jules
+    if: needs.detect-jules.outputs.jules_pushed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Beeper notification
+        # TODO: Confirm the following before enabling:
+        #   1. Base URL — if this is the Beeper Desktop API (localhost), it is not
+        #      reachable from GitHub Actions. Confirm whether a cloud endpoint exists,
+        #      or set up a proxy (e.g. a Vercel edge function that forwards to desktop).
+        #   2. Auth header — replace "Bearer" with the correct scheme if different.
+        #   3. accountID — add as a repo secret (BEEPER_ACCOUNT_ID).
+        #   4. user.id — your own Beeper user ID to start a self-DM (BEEPER_SELF_USER_ID).
+        #
+        # API shape (from https://developers.beeper.com/desktop-api-reference/resources/chats/methods/create):
+        #   POST /v1/chats
+        #   {
+        #     "accountID": "<your account id>",
+        #     "mode": "start",
+        #     "user": { "id": "<your user id>" },
+        #     "messageText": "<notification text>"
+        #   }
+        env:
+          BEEPER_API_KEY: ${{ secrets.BEEPER_API_KEY }}
+          BEEPER_BASE_URL: ${{ vars.BEEPER_BASE_URL }}
+          BEEPER_ACCOUNT_ID: ${{ secrets.BEEPER_ACCOUNT_ID }}
+          BEEPER_SELF_USER_ID: ${{ secrets.BEEPER_SELF_USER_ID }}
+          BRANCH: ${{ github.ref_name }}
+          SHA: ${{ github.event.after }}
+        run: |
+          MESSAGE="JulesWyrm pushed to ${BRANCH} (${SHA:0:7}). A wiring-review issue has been opened."
+          curl -sf -X POST "${BEEPER_BASE_URL}/v1/chats" \
+            -H "Authorization: Bearer ${BEEPER_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"accountID\": \"${BEEPER_ACCOUNT_ID}\",
+              \"mode\": \"start\",
+              \"user\": { \"id\": \"${BEEPER_SELF_USER_ID}\" },
+              \"messageText\": \"${MESSAGE}\"
+            }"
+
+  # ── Analyse diff and open issue assigned to Copilot ───────────────────────
+  create-issue:
+    needs: detect-jules
+    if: needs.detect-jules.outputs.jules_pushed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Compute diff of Jules' commits
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.event.after }}
+        run: |
+          # If BEFORE is all-zeros the branch is new; diff against the first commit's parent.
+          if [[ "$BEFORE" == "0000000000000000000000000000000000000000" ]]; then
+            git diff "${AFTER}^..${AFTER}" > /tmp/jules-diff.patch || \
+              git show "$AFTER" > /tmp/jules-diff.patch
+          else
+            git diff "${BEFORE}..${AFTER}" > /tmp/jules-diff.patch
+          fi
+          echo "Diff size: $(wc -c < /tmp/jules-diff.patch) bytes"
+
+      - name: Analyse diff and build issue body
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/analyze-diff.mjs < /tmp/jules-diff.patch > /tmp/issue-body.md
+
+      - name: Open GitHub issue assigned to Copilot
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ github.ref_name }}
+          SHA: ${{ github.event.after }}
+        run: |
+          SHORT_SHA="${SHA:0:7}"
+          gh issue create \
+            --title "Jules push on ${BRANCH} (${SHORT_SHA}): wiring review needed" \
+            --body-file /tmp/issue-body.md \
+            --assignee "@copilot"
