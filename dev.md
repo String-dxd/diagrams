@@ -153,3 +153,41 @@ Run with `npm test`. 20 tests across 3 suites, all passing.
 | B001 | Fixed | Circuit suite iframe state loss on tab switch | Fixed by rendering both iframes simultaneously, toggling with CSS display:none |
 | B002 | Fixed | Electromagnet coil flat rendering (no depth) | Fixed draw order: back arches → rod (white fill) → front arches |
 | B003 | Reverted | Electromagnet integration removed from circuit tools | Symbol style did not match required exam format (hatched steel rod + stacked cell symbols). To be redesigned before re-integrating. |
+
+---
+
+## Planned: Co-contributor Push Automation
+
+### Problem
+JulesWyrm (co-contributor) pushes raw HTML tool additions/enhancements directly. These changes need Next.js wiring (new page, `tool-id`, tracker meta, tests) before they are production-ready. Currently this wiring is done manually after noticing her push.
+
+### Goal
+Automate detection, notification, and issue creation whenever JulesWyrm pushes, so nothing falls through the cracks.
+
+### Design
+
+**Trigger:** GitHub Actions workflow on `push` to any branch.
+
+**Job 1 — Notify**
+- Check if any commit author in the push is `JulesWyrm`
+- If yes, call Beeper API to send a push notification to Kahhow
+
+**Job 2 — Auto-issue (runs only on JulesWyrm pushes)**
+- Generate a diff of her changes using the full push range (`${before}..${after}`), not just the last commit; if `before` is all zeros (new branch), handle that case separately so the diff still covers everything introduced by the push
+- Send the diff to Claude API (Anthropic) with a structured prompt that checks for:
+  - New HTML files in `public/tools/` → needs a Next.js page + `tool-id` added to `VALID_TOOLS`
+  - Missing `<meta name="tool-id">` or `<script src="/tracker.js">` in any HTML file
+  - New tool → needs Jest test suite added under `__tests__/canvas/`
+  - Changes to existing canvas logic → flag tests may need updating
+- Claude returns a structured issue body (markdown) summarising what changed and what wiring is needed
+- Open a GitHub Issue via `gh issue create --assignee "@copilot"` so Copilot automatically attempts the wiring and opens a PR
+
+**Why Claude for analysis, Copilot for implementation:**
+Claude handles open-ended diff analysis and writing the issue spec. Copilot handles the mechanical Next.js wiring (creating page files, adding tool-id, etc.) once given a clear spec.
+
+**Secrets required:**
+- `ANTHROPIC_API_KEY` — for Claude diff analysis
+- `BEEPER_*` — Beeper API auth (TBD once API docs confirmed)
+- `GITHUB_TOKEN` — already available in Actions
+
+**Status:** Planned — not yet implemented.
