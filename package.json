@@ -15,13 +15,13 @@
     "test:watch": "jest --watch",
     "sync:tools": "node scripts/sync-julienne-tools.js --write",
     "sync:check": "node scripts/sync-julienne-tools.js --check",
-    "security:audit": "npm audit --audit-level=high",
+    "security:audit": "npm audit --omit=dev --audit-level=high",
     "verify": "npm run sync:tools && npm run sync:check && npm run test:ci && npm run security:audit && npm run build"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.9.0",
-    "@next/third-parties": "15.5.22",
-    "next": "15.5.22",
+    "@next/third-parties": "15.5.27",
+    "next": "15.5.27",
     "react": "^18.3.0",
     "react-dom": "^18.3.0"
   },
@@ -42,11 +42,12 @@
   "overrides": {
     "@babel/core": "7.29.7",
     "@tootallnate/once": "2.0.1",
-    "brace-expansion": "1.1.18",
+    "brace-expansion": "1.1.21",
     "form-data": "4.0.6",
-    "js-yaml": "3.15.1",
+    "js-yaml": "3.15.2",
     "postcss": "8.5.25",
-    "sharp": "0.35.0",
-    "ws": "8.21.1"
+    "sharp": "0.35.5",
+    "ws": "8.21.1",
+    "source-map-js": "1.2.2"
   }
 }
